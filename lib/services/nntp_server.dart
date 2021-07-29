@@ -12,7 +12,7 @@ class Response {
   final int statusCode;
   final String body;
 
-  bool get isOk => statusCode == 200; // TODO Handle other status codes?
+  bool get isOk => statusCode < 400;
 
   Response(this.statusCode, this.body);
 }
@@ -96,7 +96,8 @@ class NntpServer with UiLoggy{
     final val = (await stream.first);
     //TODO Error handling here?
     final status = int.parse(val.substring(0,3)); // First 3 chars always status code
-    final body = val.substring(3);
+    final body = val.substring(4);
+    loggy.debug("Created Response statusCode='$status' body='$body'");
     return Response(status, body);
   }
 
