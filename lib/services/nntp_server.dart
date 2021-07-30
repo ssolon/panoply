@@ -10,16 +10,32 @@ enum ConnectionState { closed, open, loggedIn, error }
 
 // Status codes we may need
 
-const invalidHeaderFormat = 500;  // No status code. Should be command specific?
+const invalidHeaderFormat = '500';  // No status code. Should be command specific?
 
 class Response {
-  final int statusCode;
-  final List<String> header;
+  final String statusCode;
+  final String statusLine;
+  final List<String> headers;
+  final Map<String, String>headerValues;
   final List<String> body;
 
-  bool get isOK => statusCode < 400;
+  bool get isOK => int.parse(statusCode) < 400;
 
-  Response(this.statusCode, this.header, this.body);
+  Response(this.statusCode, this.statusLine, this.headers, this.body, this.headerValues);
+
+  static Map<String, String> parseHeaderLinesToMap(List<String> headerLines) {
+    final re = RegExp(r'^(\w*):\s*(.*)$');
+    final Map<String, String> valuesMap = {};
+
+    headerLines.skip(1).forEach((element) {  // First line is always status
+      var match = re.firstMatch(element);
+      if (match != null && match.groupCount > 1) {
+        valuesMap[match.group(1)!] = match.group(2) ?? '';
+      }
+    });
+
+    return valuesMap;
+  }
 }
 
 /// A news server that handles the connection (and other stuff).
@@ -130,12 +146,12 @@ class NntpServer with UiLoggy{
     return s.length > maxLength ? s.substring(0, maxLength) + "..." : s;
   }
 
-  /// Make a status value from the first line of [header] and remove status value.
-  int _makeStatus(List<String> header) {
-    final int status;
-    if (header.length > 0) {
-      status = header[0].length > 2 ? int.parse(header[0].substring(0,3)) : invalidHeaderFormat;
-      header[0] = header[0].length > 3 ? header[0].substring(4) : "";
+  /// Make a status value from the first line of [headers] and remove status value.
+  String _makeStatus(List<String> headers) {
+    final String status;  // Always 3 numrtic characters
+    if (headers.length > 0) {
+      status = headers[0].length > 2 ? headers[0].substring(0,3) : invalidHeaderFormat;
+      headers[0] = headers[0].length > 3 ? headers[0].substring(4) : "";
     }
     else {
       status = invalidHeaderFormat;
@@ -144,18 +160,38 @@ class NntpServer with UiLoggy{
     return status;
   }
 
-  Response makeResponse(List<String> header, List<String> body) {
-    final status = _makeStatus(header);
+  Response makeResponse(List<String> headerLines, List<String> body, [mappedHeader=false]) {
+    final statusCode = _makeStatus(headerLines);
     // loggy.debug("Created Response statusCode='$status' header='${trunc(responseHeader)}' body='${trunc(body)}'");
-    return Response(status, header, body);
+
+    // First line is always status -- if there
+
+    final String statusLine;
+    final List<String> headers;
+    if (headerLines.length > 0) {
+      statusLine = headerLines[0].trimRight();
+      headers = headerLines.skip(1).toList(); // First line is always status
+    }
+    else {
+      statusLine ='';  // So everybody else doesn't have to check
+      headers = [];
+    }
+
+    // Parse any possible header map values
+
+    final Map<String, String> headerMap = mappedHeader
+        ? Response.parseHeaderLinesToMap(headers)
+        : {};
+
+    return Response(statusCode, statusLine, headers, body, headerMap);
   }
 
   Future<Response> handleSingleLineResponse (Stream<String> stream) async {
-    return makeResponse([await stream.first], [""]);
+    return makeResponse([await stream.first], []);
     //TODO Error handling here?
   }
 
-  Future<Response> handleMultiLineResponse(Stream<String> stream) async {
+  Future<Response> handleMultiLineResponse(Stream<String> stream, [mappedHeader= false]) async {
     List<String> header = [];
     List<String> body = [];
     var inHeader = true;
@@ -176,7 +212,7 @@ class NntpServer with UiLoggy{
       }
     });
 
-    return makeResponse(header, body);
+    return makeResponse(header, body, mappedHeader);
   }
 
   Future<void> close() async {
