@@ -14,8 +14,8 @@ const invalidHeaderFormat = 500;  // No status code. Should be command specific?
 
 class Response {
   final int statusCode;
-  final String header;
-  final String body;
+  final List<String> header;
+  final List<String> body;
 
   bool get isOK => statusCode < 400;
 
@@ -130,21 +130,34 @@ class NntpServer with UiLoggy{
     return s.length > maxLength ? s.substring(0, maxLength) + "..." : s;
   }
 
-  Response makeResponse(header, body) {
-    final status = header.length > 2 ? int.parse(header.substring(0,3)) : invalidHeaderFormat; // First 3 chars always status code
-    final responseHeader = header.length > 3 ? header.substring(4) : "";
-    loggy.debug("Created Response statusCode='$status' header='${trunc(responseHeader)}' body='${trunc(body)}'");
-    return Response(status, responseHeader, body);
+  /// Make a status value from the first line of [header] and remove status value.
+  int _makeStatus(List<String> header) {
+    final int status;
+    if (header.length > 0) {
+      status = header[0].length > 2 ? int.parse(header[0].substring(0,3)) : invalidHeaderFormat;
+      header[0] = header[0].length > 3 ? header[0].substring(4) : "";
+    }
+    else {
+      status = invalidHeaderFormat;
+    }
+
+    return status;
+  }
+
+  Response makeResponse(List<String> header, List<String> body) {
+    final status = _makeStatus(header);
+    // loggy.debug("Created Response statusCode='$status' header='${trunc(responseHeader)}' body='${trunc(body)}'");
+    return Response(status, header, body);
   }
 
   Future<Response> handleSingleLineResponse (Stream<String> stream) async {
-    return makeResponse(await stream.first, "");
+    return makeResponse([await stream.first], [""]);
     //TODO Error handling here?
   }
 
   Future<Response> handleMultiLineResponse(Stream<String> stream) async {
-    var header = "";
-    var body = "";
+    List<String> header = [];
+    List<String> body = [];
     var inHeader = true;
 
     await stream.takeWhile((l) => l.trimRight() != ".").forEach((element) {
@@ -155,11 +168,11 @@ class NntpServer with UiLoggy{
           inHeader = false;
         }
         else {
-          header += line;
+          header.add(line);
         }
       }
       else {
-        body += line;
+        body.add(line);
       }
     });
 

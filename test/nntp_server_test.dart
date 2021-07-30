@@ -16,43 +16,43 @@ void main() {
 
   group('Response Handling', () {
     test('Make empty header', () {
-      final response = server.makeResponse('', '');
+      final response = server.makeResponse([''], ['']);
 
-      expect(response.statusCode, equals(invalidHeaderFormat));
-      expect(response.isOK, equals(false));
+      expect(response.statusCode, invalidHeaderFormat);
+      expect(response.isOK, false);
 
-      expect(response.header, equals(''));
-      expect(response.body, equals(''));
+      expect(response.header, ['']);
+      expect(response.body, ['']);
     });
 
     test('Short header', () {
-      final response = server.makeResponse('300', '');
-
-      expect(response.statusCode, equals(300));
-      expect(response.isOK, true);
-
-      expect(response.header, equals(''));
-      expect(response.body, equals(''));
-    });
-
-    test('Error header', () {
-      final response = server.makeResponse('400 Error four hundred', '');
-
-      expect(response.statusCode, equals(400));
-      expect(response.isOK, false);
-
-      expect(response.header, 'Error four hundred');
-      expect(response.body, '');
-    });
-
-    test('All values', () {
-      final response = server.makeResponse('300 All is good', 'The body.');
+      final response = server.makeResponse(['300'], ['']);
 
       expect(response.statusCode, 300);
       expect(response.isOK, true);
 
-      expect(response.header, 'All is good');
-      expect(response.body, 'The body.');
+      expect(response.header, ['']);
+      expect(response.body, ['']);
+    });
+
+    test('Error header', () {
+      final response = server.makeResponse(['400 Error four hundred'], ['']);
+
+      expect(response.statusCode, 400);
+      expect(response.isOK, false);
+
+      expect(response.header, ['Error four hundred']);
+      expect(response.body, ['']);
+    });
+
+    test('All values', () {
+      final response = server.makeResponse(['300 All is good'], ['The body.']);
+
+      expect(response.statusCode, 300);
+      expect(response.isOK, true);
+
+      expect(response.header, ['All is good']);
+      expect(response.body, ['The body.']);
     });
 
     test('Single line response', () async {
@@ -62,8 +62,8 @@ void main() {
       expect(response.statusCode, 300);
       expect(response.isOK, true);
 
-      expect(response.header, 'Some stuff in the header');
-      expect(response.body, '');
+      expect(response.header, ['Some stuff in the header']);
+      expect(response.body, ['']);
     });
 
     test('Multiline header response', () async {
@@ -93,8 +93,7 @@ void main() {
       expect(response.statusCode, 101);
       expect(response.isOK, true);
 
-      final lines = response.header.trimRight().split('\n');
-      expect(lines.length, responseLines.length-1);  // Terminating dot line removed
+      expect(response.header.length, responseLines.length-1);  // Terminating dot line removed
     });
   });
 
