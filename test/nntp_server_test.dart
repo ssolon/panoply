@@ -118,8 +118,9 @@ void main() {
       'Xref: aioe.org alt.test:488627\r\n',
       '\r\n',
       'body1\r\n',
-      'body2\t\n'
-      '.\r\n'
+      'body2\r\n',
+      'body3\r\n',
+      '.\r\n',
       ];
 
       final stream = Stream.fromIterable(responseLines).transform(LineSplitter());
@@ -134,6 +135,10 @@ void main() {
       expect(response.header('Xref'), 'aioe.org alt.test:488627');
       expect(response.header('Lines'), '3');
       expect(response.header('foo'), null);
+
+      expect(response.body[0], 'body1');
+      expect(response.body[1], 'body2');
+      expect(response.body[2], 'body3');
     });
   });
 

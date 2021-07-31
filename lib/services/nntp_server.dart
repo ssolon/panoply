@@ -138,10 +138,9 @@ class NntpServer with UiLoggy{
   // }
 
 
-  /// fixLine by unstuffing any leading dot and adding back endline which
-  /// we canonicalize to just newline.
+  /// fixLine by unstuffing any leading dot.
   String fixLine(String l) {
-    return (l.startsWith("..") ? l.substring(1) : l) + '\n';
+    return (l.startsWith("..") ? l.substring(1) : l);
   }
 
   String trunc(String s, [int maxLength=100]) {
@@ -202,7 +201,7 @@ class NntpServer with UiLoggy{
       final line = fixLine(element.trimRight());
 
       if (inHeader) {
-        if (inHeader && line == "") {
+        if (line == "") {
           inHeader = false;
         }
         else {
