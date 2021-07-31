@@ -16,18 +16,20 @@ class Response {
   final String statusCode;
   final String statusLine;
   final List<String> headers;
-  final Map<String, String>headerValues;
+  final Map<String, String>_headerValues;
   final List<String> body;
 
   bool get isOK => int.parse(statusCode) < 400;
 
-  Response(this.statusCode, this.statusLine, this.headers, this.body, this.headerValues);
+  Response(this.statusCode, this.statusLine, this.headers, this.body, this._headerValues);
+
+  String? header(String key) => _headerValues[key];
 
   static Map<String, String> parseHeaderLinesToMap(List<String> headerLines) {
-    final re = RegExp(r'^(\w*):\s*(.*)$');
+    final re = RegExp(r'(\w+):\s*(.*)');
     final Map<String, String> valuesMap = {};
 
-    headerLines.skip(1).forEach((element) {  // First line is always status
+    headerLines.forEach((element) {
       var match = re.firstMatch(element);
       if (match != null && match.groupCount > 1) {
         valuesMap[match.group(1)!] = match.group(2) ?? '';
