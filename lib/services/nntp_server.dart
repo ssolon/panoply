@@ -16,7 +16,7 @@ const invalidHeaderFormat = '500';  // No status code. Should be command specifi
 ///
 /// The returned [statusCode] is parsed out, leaving the rest of the first line
 /// as [statusLine]. Additional header lines are in [headers] and those responses
-/// that return a set of key/value pairs can be accessed as [header(key)].
+/// that return a set of key/value pairs can be accessed as [header[key]].
 ///
 /// Finally, the body is, unsurprisingly in [body].
 ///
@@ -27,17 +27,15 @@ class Response {
   final String statusCode;
   final String statusLine;
   final List<String> headers;
+  final Map<String, String> header;
   final List<String> body;
 
-  final Map<String, String>_headerValues;
 
   /// Predicate that tests [statusCode].
   bool get isOK => int.parse(statusCode) < 400;
 
   /// CTOR
-  Response(this.statusCode, this.statusLine, this.headers, this.body, this._headerValues);
-
-  String? header(String key) => _headerValues[key];
+  Response(this.statusCode, this.statusLine, this.headers, this.body, this.header);
 
   /// Parse 'key: value' lines into the returned map.
   static Map<String, String> parseHeaderLinesToMap(List<String> headerLines) {

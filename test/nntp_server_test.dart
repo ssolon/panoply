@@ -131,10 +131,10 @@ void main() {
 
       // Check some fields
 
-      expect(response.header('Subject'), '3ca86b8695a06cc7-4dc61d23a4d0f2ac-183926bb9a269b5f-12d6e977dae61b4a');
-      expect(response.header('Xref'), 'aioe.org alt.test:488627');
-      expect(response.header('Lines'), '3');
-      expect(response.header('foo'), null);
+      expect(response.header['Subject'], '3ca86b8695a06cc7-4dc61d23a4d0f2ac-183926bb9a269b5f-12d6e977dae61b4a');
+      expect(response.header['Xref'], 'aioe.org alt.test:488627');
+      expect(response.header['Lines'], '3');
+      expect(response.header['foo'], null);
 
       expect(response.body[0], 'body1');
       expect(response.body[1], 'body2');
