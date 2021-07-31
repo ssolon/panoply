@@ -12,19 +12,34 @@ enum ConnectionState { closed, open, loggedIn, error }
 
 const invalidHeaderFormat = '500';  // No status code. Should be command specific?
 
+/// General response from the server.
+///
+/// The returned [statusCode] is parsed out, leaving the rest of the first line
+/// as [statusLine]. Additional header lines are in [headers] and those responses
+/// that return a set of key/value pairs can be accessed as [header(key)].
+///
+/// Finally, the body is, unsurprisingly in [body].
+///
+/// All strings have terminating \r\n removed.
+///
+
 class Response {
   final String statusCode;
   final String statusLine;
   final List<String> headers;
-  final Map<String, String>_headerValues;
   final List<String> body;
 
+  final Map<String, String>_headerValues;
+
+  /// Predicate that tests [statusCode].
   bool get isOK => int.parse(statusCode) < 400;
 
+  /// CTOR
   Response(this.statusCode, this.statusLine, this.headers, this.body, this._headerValues);
 
   String? header(String key) => _headerValues[key];
 
+  /// Parse 'key: value' lines into the returned map.
   static Map<String, String> parseHeaderLinesToMap(List<String> headerLines) {
     final re = RegExp(r'(\w+):\s*(.*)');
     final Map<String, String> valuesMap = {};
@@ -62,6 +77,7 @@ class NntpServer with UiLoggy{
 
   NntpServer(this.name, this.hostName, [this.portNumber = 119, username, password]);
 
+  //TODO Error handling
   void handleError(String errorMessage) {
     //TODO There should be a listener to receive these and display appropriately
     connectionError = "connection=$name $errorMessage";
@@ -87,6 +103,8 @@ class NntpServer with UiLoggy{
     }
   }
 
+  /// Open a connection the the server at [name]/[portNumber] and return the
+  /// response.
   Future<Response> connect() async {
     loggy.debug("Start connect to server hostName=$hostName");
 
@@ -138,7 +156,7 @@ class NntpServer with UiLoggy{
   // }
 
 
-  /// fixLine by unstuffing any leading dot.
+  /// Fix string [l] by unstuffing any leading dot.
   String fixLine(String l) {
     return (l.startsWith("..") ? l.substring(1) : l);
   }
@@ -161,6 +179,8 @@ class NntpServer with UiLoggy{
     return status;
   }
 
+  /// Create a [Response] object from [headerLines], [body] parsing [headerLines]
+  /// into a map when [mappedHeader] is true.
   Response makeResponse(List<String> headerLines, List<String> body, [mappedHeader=false]) {
     final statusCode = _makeStatus(headerLines);
     // loggy.debug("Created Response statusCode='$status' header='${trunc(responseHeader)}' body='${trunc(body)}'");
@@ -187,12 +207,24 @@ class NntpServer with UiLoggy{
     return Response(statusCode, statusLine, headers, body, headerMap);
   }
 
+  /// Handle the response to a command which returns a single line, which
+  /// will be parsed into [statusCode] and [statusLine].
   Future<Response> handleSingleLineResponse (Stream<String> stream) async {
     return makeResponse([await stream.first], []);
     //TODO Error handling here?
   }
 
-  Future<Response> handleMultiLineResponse(Stream<String> stream, [mappedHeader= false]) async {
+  ///
+  /// Handle the response to a command which returns multiple lines.
+  ///
+  /// The status line will be parsed into [statusCode] and [statusLine] and
+  /// additional header lines will be available as [headers] with the body
+  /// as [body].
+  ///
+  /// If the header contains 'key: value' specifications setting [mappedHeader]
+  /// will parse them and make them available as [header(key)].
+  ///
+  Future<Response> handleMultiLineResponse(Stream<String> stream, [mappedHeader=false]) async {
     List<String> header = [];
     List<String> body = [];
     var inHeader = true;
