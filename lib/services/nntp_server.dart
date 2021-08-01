@@ -89,6 +89,8 @@ class NntpServer with UiLoggy{
     return username != null;
   }
 
+  List<int> encodeForServer(String s) => _socket!.encoding.encoder.convert(s + '\r\n');
+  
   /// Authenticate using username/password on open socket.
   bool authenticate() {
     if (!isOpen) {
@@ -120,8 +122,17 @@ class NntpServer with UiLoggy{
         _connectionState = ConnectionState.open;
         loggy.debug("Socket opened");
 
-        // _stream = _socket?.transform(_socket?.encoding.decoder)//.transform(LineSplitter());
-        _stream = _socket?.encoding.decoder.bind(_socket!).transform(LineSplitter());
+        //!!!! Test out error handling
+        var _errorHandlerStream = _socket?.handleError((error) {
+          loggy.error("Error on ${hostName}:$error");
+        });
+        // _stream = _socket?.encoding.decoder.bind(_errorHandlerStream!).transform(LineSplitter());
+        _stream = _socket?.encoding.decoder
+            .bind(_socket!)
+            .transform(LineSplitter())
+            .asBroadcastStream(onListen: (subscription) => loggy.debug("Listen: $subscription"),
+                               onCancel: (subscription) => loggy.debug("Cancel: $subscription")
+        );
         // var resp = await _stream?.first;
         // loggy.debug("Connect response=$resp");
 /*!!!!
@@ -153,6 +164,13 @@ class NntpServer with UiLoggy{
   //   return handleMultiLineResponse();
   // }
 
+
+  /// Execute a multiline command.
+  Future<Response> executeMultilineCommand(String command) async {
+    _socket!.add(encodeForServer(command));
+    var responseStream = _stream!;
+    return handleMultiLineResponse(responseStream);
+  }
 
   /// Fix string [l] by unstuffing any leading dot.
   String fixLine(String l) {
@@ -252,9 +270,11 @@ class NntpServer with UiLoggy{
     }
     else {
       // await _stream?.cancel();
-      _stream = null;
-      await _socket?.close();
-      _connectionState = ConnectionState.closed;
+      //!!!!_stream = null; // Not needed with getter for _stream
+      if (_socket != null) {
+        _connectionState = ConnectionState.closed;
+        return _socket!.close();
+      }
     }
   }
 }

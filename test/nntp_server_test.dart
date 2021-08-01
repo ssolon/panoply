@@ -12,6 +12,7 @@ void main() {
 
   setUp(() {
     server = NntpServer("test_no_auth", "nntp.aioe.org");
+    // server = NntpServer("faix-server", 'localhost', 65432);
   });
 
   group('Response Handling', () {
@@ -159,5 +160,27 @@ void main() {
           server.close(), completes, reason: "Close should complete");
       expect(server.isClosed, true, reason: "Server closed after close");
     });
+
+    test('Get capabilities', () async {
+      final connectResponse = await server.connect();
+      expect(connectResponse.isOK, true);
+
+      final response = await server.executeMultilineCommand("capabilities");
+      expect(response.isOK, true);
+      print(response.headers);
+
+      await expectLater(server.close(), completes, reason: "Close should complete");
+      expect(server.isClosed, true);
+    });
   });
+
+  // test('See what happens on connection close', () async {
+  //   server = NntpServer("faux_server", "localhost", 65432);
+  //   final response = await server.connect();
+  //   expect(response.isOK, true);
+  //   //!!!! Wait while we see what happens when a disconnect arrives
+  //   // print("!!!! Waiting...");
+  //   // await Future.delayed(Duration(minutes: 1));
+  //   // print("...done!!!!");
+  // });
 }
