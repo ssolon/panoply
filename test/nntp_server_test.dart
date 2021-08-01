@@ -143,8 +143,8 @@ void main() {
     });
   });
 
-  group("Integration tests using nntp.aioe.org", ()
-  {
+  group("Integration tests using nntp.aioe.org", () {
+
     test('Connect to server without credentials', () async {
       expect(server, isNotNull);
       expect(server.isClosed, true, reason: "Server starts closed");
@@ -161,6 +161,22 @@ void main() {
       expect(server.isClosed, true, reason: "Server closed after close");
     });
 
+    test('Close connection on server close (done)', () async {
+      expect(server, isNotNull);
+      expect(server.isClosed, true, reason: "Server starts closed");
+      expect(server.isOpen, false, reason: "Server starts no open");
+
+      final response = await server.connect();
+      expect(server.isClosed, false, reason: "Server not closed after connect");
+      expect(server.isOpen, true, reason: "Server open after connect");
+      expect(response.statusCode, '200');
+      expect(response.isOK, true, reason: "Connect worked");
+
+      final quitResponse = await server.executeSingleLineCommand("quit");
+      expect(quitResponse.isOK, true);
+      expect(quitResponse.statusCode, '205');
+    });
+
     test('Get capabilities', () async {
       final connectResponse = await server.connect();
       expect(connectResponse.isOK, true);
@@ -171,10 +187,6 @@ void main() {
 
       final quitResponse = await server.executeSingleLineCommand("quit");
       expect(quitResponse.isOK, true);
-      expect(quitResponse.statusCode, '205');
-
-      await Future.delayed(Duration(seconds: 2));
-      expect(server.isClosed, true);
     });
   });
 
