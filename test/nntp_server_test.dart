@@ -169,7 +169,11 @@ void main() {
       expect(response.isOK, true);
       print(response.headers);
 
-      await expectLater(server.close(), completes, reason: "Close should complete");
+      final quitResponse = await server.executeSingleLineCommand("quit");
+      expect(quitResponse.isOK, true);
+      expect(quitResponse.statusCode, '205');
+
+      await Future.delayed(Duration(seconds: 2));
       expect(server.isClosed, true);
     });
   });
@@ -179,8 +183,8 @@ void main() {
   //   final response = await server.connect();
   //   expect(response.isOK, true);
   //   //!!!! Wait while we see what happens when a disconnect arrives
-  //   // print("!!!! Waiting...");
-  //   // await Future.delayed(Duration(minutes: 1));
-  //   // print("...done!!!!");
+  //   print("!!!! Waiting...");
+  //   await Future.delayed(Duration(minutes: 1));
+  //   print("...done!!!!");
   // });
 }

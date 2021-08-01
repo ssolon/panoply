@@ -133,6 +133,15 @@ class NntpServer with UiLoggy{
             .asBroadcastStream(onListen: (subscription) => loggy.debug("Listen: $subscription"),
                                onCancel: (subscription) => loggy.debug("Cancel: $subscription")
         );
+
+        //!!!! If we setup a listener can we detect server disconnect?
+        _stream!.listen((event) { },
+            onError: (error) => handleError("!!!! Error in $name: $error"),
+            onDone: () {
+              loggy.debug("!!!! $name is done!");
+              _connectionState = ConnectionState.closed;
+              _socket?.destroy();
+            });
         // var resp = await _stream?.first;
         // loggy.debug("Connect response=$resp");
 /*!!!!
@@ -170,6 +179,11 @@ class NntpServer with UiLoggy{
     _socket!.add(encodeForServer(command));
     var responseStream = _stream!;
     return handleMultiLineResponse(responseStream);
+  }
+
+  Future<Response> executeSingleLineCommand(String command) async {
+    _socket!.add(encodeForServer(command));
+    return handleSingleLineResponse(_stream!);
   }
 
   /// Fix string [l] by unstuffing any leading dot.
