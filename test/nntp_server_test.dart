@@ -172,7 +172,7 @@ void main() {
       expect(response.statusCode, '200');
       expect(response.isOK, true, reason: "Connect worked");
 
-      final quitResponse = await server.executeSingleLineCommand("quit");
+      final quitResponse = await server.executeSingleLineRequest("quit");
       expect(quitResponse.isOK, true);
       expect(quitResponse.statusCode, '205');
     });
@@ -181,11 +181,11 @@ void main() {
       final connectResponse = await server.connect();
       expect(connectResponse.isOK, true);
 
-      final response = await server.executeMultilineCommand("capabilities");
+      final response = await server.executeMultilineRequest("capabilities");
       expect(response.isOK, true);
       print(response.headers);
 
-      final quitResponse = await server.executeSingleLineCommand("quit");
+      final quitResponse = await server.executeSingleLineRequest("quit");
       expect(quitResponse.isOK, true);
     });
   });

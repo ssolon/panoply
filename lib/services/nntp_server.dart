@@ -174,15 +174,16 @@ class NntpServer with UiLoggy{
   // }
 
 
-  /// Execute a multiline command.
-  Future<Response> executeMultilineCommand(String command) async {
-    _socket!.add(encodeForServer(command));
+  /// Execute a multiline request.
+  Future<Response> executeMultilineRequest(String request) async {
+    _socket!.add(encodeForServer(request));
     var responseStream = _stream!;
     return handleMultiLineResponse(responseStream);
   }
 
-  Future<Response> executeSingleLineCommand(String command) async {
-    _socket!.add(encodeForServer(command));
+  /// Execute a single line request.
+  Future<Response> executeSingleLineRequest(String request) async {
+    _socket!.add(encodeForServer(request));
     return handleSingleLineResponse(_stream!);
   }
 
