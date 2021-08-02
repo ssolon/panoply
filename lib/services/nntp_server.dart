@@ -53,13 +53,19 @@ class Response {
   }
 }
 
-/// A news server that handles the connection (and other stuff).
+/// A news server that handles the connection and basic communication.
+///
+/// This is a very simple layer that handles traffic back an forth but doesn't
+/// do any sort of interpretion or understanding and only deals with connection
+/// and communication format errors.
+///
+/// Errors are handled by throwing exceptions which can happen at any time since
+/// the server may close the connection when it chooses (usually will timeout).
+///
 class NntpServer with UiLoggy{
   String name;
   String hostName;
   int    portNumber;
-  String? username;
-  String? password;
 
   var connectTimeout = Duration(seconds: 5000);
 
@@ -72,7 +78,7 @@ class NntpServer with UiLoggy{
   Socket? _socket;
   Stream<String>? _stream;
 
-  NntpServer(this.name, this.hostName, [this.portNumber = 119, username, password]);
+  NntpServer(this.name, this.hostName, [this.portNumber = 119]);
 
   //TODO Error handling
   void handleError(String errorMessage) {
@@ -83,10 +89,6 @@ class NntpServer with UiLoggy{
   }
 
   bool get isConnectionOpen => _connectionState == ConnectionState.open;
-
-  bool get authNeeded {
-    return username != null;
-  }
 
   List<int> encodeForServer(String s) => _socket!.encoding.encoder.convert(s + '\r\n');
   
