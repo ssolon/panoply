@@ -70,7 +70,6 @@ class NntpServer with UiLoggy{
 
   String connectionError = "";
   Socket? _socket;
-  // StreamSubscription? _stream;
   Stream<String>? _stream;
 
   NntpServer(this.name, this.hostName, [this.portNumber = 119, username, password]);
@@ -91,18 +90,6 @@ class NntpServer with UiLoggy{
 
   List<int> encodeForServer(String s) => _socket!.encoding.encoder.convert(s + '\r\n');
   
-  /// Authenticate using username/password on open socket.
-  bool authenticate() {
-    if (!isOpen) {
-      handleError("Can't authenticate in connectState=$_connectionState");
-      return false;
-    }
-    else {
-      //TODO Authenticate
-      return false;
-    }
-  }
-
   /// Open a connection the the server at [name]/[portNumber] and return the
   /// response.
   Future<Response> connect() async {
@@ -126,38 +113,18 @@ class NntpServer with UiLoggy{
         var _errorHandlerStream = _socket?.handleError((error) {
           loggy.error("Error on ${hostName}:$error");
         });
-        // _stream = _socket?.encoding.decoder.bind(_errorHandlerStream!).transform(LineSplitter());
         _stream = _socket?.encoding.decoder
             .bind(_socket!)
             .transform(LineSplitter())
-            .asBroadcastStream(onListen: (subscription) => loggy.debug("Listen: $subscription"),
-                               onCancel: (subscription) => loggy.debug("Cancel: $subscription")
-        );
+            .asBroadcastStream();
 
-        //!!!! If we setup a listener can we detect server disconnect?
         _stream!.listen((event) { },
             onError: (error) => handleError("!!!! Error in $name: $error"),
             onDone: () {
-              loggy.debug("!!!! $name is done!");
+              loggy.debug("name=$name hostName=$hostName portNumber=$portNumber is done!");
               _connectionState = ConnectionState.closed;
               _socket?.destroy();
             });
-        // var resp = await _stream?.first;
-        // loggy.debug("Connect response=$resp");
-/*!!!!
-        _stream = _socket?.listen((event) {
-          loggy.debug("Received event=${_socket?.encoding.decoder.convert(event)} '$event' from name=$name");
-        },
-          onDone: () => loggy.debug("OnDone for name=$name"),
-          onError: (error) => loggy.error("onError for name=$name"),
-        );
-        loggy.debug("Listen setup for name=$name");
-!!!!*/
-/*!!!!
-        if (authNeeded) {
-          return authenticate();
-        }
-!!!!*/
       }
       catch (e) {
         handleError("Failed to connect to hostName=$hostName portNumber=$portNumber: $e");
@@ -167,12 +134,6 @@ class NntpServer with UiLoggy{
     loggy.debug("ConnectToServer for name=$name done.");
     return handleSingleLineResponse(_stream!);
   }
-
-  // Future<Response> runCapabilities() {
-  //   _socket.add("capabilities");
-  //   return handleMultiLineResponse();
-  // }
-
 
   /// Execute a multiline request.
   Future<Response> executeMultilineRequest(String request) async {
@@ -284,12 +245,8 @@ class NntpServer with UiLoggy{
       handleError("Attempt to close a closed nntp connection");
     }
     else {
-      // await _stream?.cancel();
-      //!!!!_stream = null; // Not needed with getter for _stream
-      if (_socket != null) {
-        _connectionState = ConnectionState.closed;
-        return _socket!.close();
-      }
+      _connectionState = ConnectionState.closed;
+      return _socket?.destroy();
     }
   }
 }

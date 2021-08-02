@@ -161,7 +161,7 @@ void main() {
       expect(server.isClosed, true, reason: "Server closed after close");
     });
 
-    test('Close connection on server close (done)', () async {
+    test('Close connection on server close (quit->done)', () async {
       expect(server, isNotNull);
       expect(server.isClosed, true, reason: "Server starts closed");
       expect(server.isOpen, false, reason: "Server starts no open");
