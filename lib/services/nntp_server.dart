@@ -12,6 +12,38 @@ enum ConnectionState { closed, open, loggedIn, error }
 
 const invalidHeaderFormat = '500';  // No status code. Should be command specific?
 
+// Base exception for all our exceptions.
+class NntpServerException implements Exception {
+  final String message;
+
+  NntpServerException(this.message);
+
+  @override toString() {
+    return "${this.runtimeType.toString()}:$message";
+  }
+}
+
+/// Couldn't open the connection for some reason which hopefully is explained
+/// in the [message].
+class FailedToOpenConnectionException extends NntpServerException {
+  FailedToOpenConnectionException(String message): super(message);
+}
+
+/// Attempt to perform an operation when the connection is not open.
+class ConnectionClosedException extends NntpServerException {
+  ConnectionClosedException(String message): super(message);
+}
+
+/// Connection is already open on [connect] request.
+class ConnectionAlreadyOpenException extends NntpServerException {
+  ConnectionAlreadyOpenException(String message): super(message);
+}
+
+/// Received an [error] from the connection/stream.
+class UnexpectedError extends NntpServerException {
+  UnexpectedError(String message): super(message);
+}
+
 /// General response from the server.
 ///
 /// The returned [statusCode] is parsed out, leaving the rest of the first line
@@ -56,7 +88,7 @@ class Response {
 /// A news server that handles the connection and basic communication.
 ///
 /// This is a very simple layer that handles traffic back an forth but doesn't
-/// do any sort of interpretion or understanding and only deals with connection
+/// do any sort of interpretation or understanding and only deals with connection
 /// and communication format errors.
 ///
 /// Errors are handled by throwing exceptions which can happen at any time since
@@ -72,82 +104,103 @@ class NntpServer with UiLoggy{
   var _connectionState = ConnectionState.closed;
   bool get isClosed => _connectionState == ConnectionState.closed;
   bool get isOpen => _connectionState == ConnectionState.open;
-  bool get isLoggedIn => _connectionState == ConnectionState.loggedIn;
 
   String connectionError = "";
-  Socket? _socket;
-  Stream<String>? _stream;
+  Socket? __realSocket; // Use getter _socket
+  Stream<String>? __realStream; // Use getter _stream
 
-  NntpServer(this.name, this.hostName, [this.portNumber = 119]);
+  String _exceptionMessage(detail) => "$detail: name=$name hostName=$hostName portNumber=$portNumber";
 
-  //TODO Error handling
-  void handleError(String errorMessage) {
-    //TODO There should be a listener to receive these and display appropriately
-    connectionError = "connection=$name $errorMessage";
-    _connectionState = ConnectionState.error;
-    loggy.error("ERROR: $connectionError");
+  /// Return socket for host access. Throws exception if connection closed.
+  Socket get _socket {
+    if (__realSocket != null) {
+      return __realSocket!;
+    }
+
+    throw ConnectionClosedException(_exceptionMessage('Socket null'));
   }
 
+  /// Return stream for host. Throws exception if stream inaccessible (connection closed?).
+  Stream<String> get _stream {
+    if (__realStream != null) {
+      return __realStream!;
+    }
+
+    throw ConnectionClosedException(_exceptionMessage('Stream null'));
+  }
+  NntpServer(this.name, this.hostName, [this.portNumber = 119]);
+
+  void _handleError(String what, String errorMessage) {
+    throw UnexpectedError(_exceptionMessage("$what:$errorMessage"));
+  }
+
+  /// Do we think the connection is open (might not be now, or soon not to be)
   bool get isConnectionOpen => _connectionState == ConnectionState.open;
 
-  List<int> encodeForServer(String s) => _socket!.encoding.encoder.convert(s + '\r\n');
-  
+  /// Converts to server coding and adds CRLF.
+  List<int> encodeForServer(String s) => _socket.encoding.encoder.convert(s + '\r\n');
+
   /// Open a connection the the server at [name]/[portNumber] and return the
   /// response.
   Future<Response> connect() async {
     loggy.debug("Start connect to server hostName=$hostName");
 
     switch (_connectionState) {
-      case ConnectionState.error:
-        handleError("Can't open connection which had an error");
-        break;
+      case ConnectionState.open:
+        throw ConnectionAlreadyOpenException(_exceptionMessage('Connection already open'));
 
       case ConnectionState.closed:
+
         // Create a new socket and connect
-      try {
+
         loggy.debug("About to connect to hostName=$hostName on portNumber=$portNumber");
 
-        _socket = await Socket.connect(hostName, portNumber, timeout: connectTimeout);
+        try {
+          __realSocket = await Socket.connect(hostName, portNumber, timeout: connectTimeout);
+          if (__realSocket == null) {
+            throw FailedToOpenConnectionException(_exceptionMessage('failed to connect - socket null!'));
+          }}
+        on SocketException catch (e) {
+          throw FailedToOpenConnectionException(_exceptionMessage("Exception opening connection:$e"));
+        }
+
         _connectionState = ConnectionState.open;
         loggy.debug("Socket opened");
 
-        //!!!! Test out error handling
-        var _errorHandlerStream = _socket?.handleError((error) {
-          loggy.error("Error on ${hostName}:$error");
+        // Is this useful or are errors thrown?
+        var _errorHandlerStream = _socket.handleError((error) {
+          _handleError("Stream error", error);
         });
-        _stream = _socket?.encoding.decoder
-            .bind(_socket!)
-            .transform(LineSplitter())
+
+        __realStream = _socket.encoding.decoder
+            .bind(_socket)
+            .transform(const LineSplitter())
             .asBroadcastStream();
 
-        _stream!.listen((event) { },
-            onError: (error) => handleError("!!!! Error in $name: $error"),
+        _stream.listen((event) { },
+            onError: (error) => _handleError('listen on stream error', error),
             onDone: () {
               loggy.debug("name=$name hostName=$hostName portNumber=$portNumber is done!");
               _connectionState = ConnectionState.closed;
-              _socket?.destroy();
+              _socket.destroy();
             });
-      }
-      catch (e) {
-        handleError("Failed to connect to hostName=$hostName portNumber=$portNumber: $e");
-      }
-
     }
+
     loggy.debug("ConnectToServer for name=$name done.");
-    return handleSingleLineResponse(_stream!);
+    return handleSingleLineResponse(_stream);
   }
 
   /// Execute a multiline request.
   Future<Response> executeMultilineRequest(String request) async {
-    _socket!.add(encodeForServer(request));
-    var responseStream = _stream!;
+    _socket.add(encodeForServer(request));
+    var responseStream = _stream;
     return handleMultiLineResponse(responseStream);
   }
 
   /// Execute a single line request.
   Future<Response> executeSingleLineRequest(String request) async {
-    _socket!.add(encodeForServer(request));
-    return handleSingleLineResponse(_stream!);
+    _socket.add(encodeForServer(request));
+    return handleSingleLineResponse(_stream);
   }
 
   /// Fix string [l] by unstuffing any leading dot.
@@ -161,8 +214,8 @@ class NntpServer with UiLoggy{
 
   /// Make a status value from the first line of [headers] and remove status value.
   String _makeStatus(List<String> headers) {
-    final String status;  // Always 3 numrtic characters
-    if (headers.length > 0) {
+    final String status;  // Always 3 numeric characters
+    if (headers.isNotEmpty) {
       status = headers[0].length > 2 ? headers[0].substring(0,3) : invalidHeaderFormat;
       headers[0] = headers[0].length > 3 ? headers[0].substring(4) : "";
     }
@@ -177,13 +230,12 @@ class NntpServer with UiLoggy{
   /// into a map when [mappedHeader] is true.
   Response makeResponse(List<String> headerLines, List<String> body, [mappedHeader=false]) {
     final statusCode = _makeStatus(headerLines);
-    // loggy.debug("Created Response statusCode='$status' header='${trunc(responseHeader)}' body='${trunc(body)}'");
 
     // First line is always status -- if there
 
     final String statusLine;
     final List<String> headers;
-    if (headerLines.length > 0) {
+    if (headerLines.isNotEmpty) {
       statusLine = headerLines[0].trimRight();
       headers = headerLines.skip(1).toList(); // First line is always status
     }
@@ -243,12 +295,9 @@ class NntpServer with UiLoggy{
   }
 
   Future<void> close() async {
-    if (isClosed) {
-      handleError("Attempt to close a closed nntp connection");
-    }
-    else {
+    if (!isClosed) {
       _connectionState = ConnectionState.closed;
-      return _socket?.destroy();
+      return _socket.destroy();
     }
   }
 }

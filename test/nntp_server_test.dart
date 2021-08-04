@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:loggy/loggy.dart';
 import 'package:test/test.dart';
@@ -141,6 +142,22 @@ void main() {
       expect(response.body[1], 'body2');
       expect(response.body[2], 'body3');
     });
+  });
+
+  group('Error handling', () {
+    test('SingleLine request without connection should throw', () {
+      expect(() => server.executeSingleLineRequest('foo'), throwsA(isA<ConnectionClosedException>()));
+    });
+
+    test('MultiLine request without connection should throw', () {
+      expect(() => server.executeMultilineRequest('foo'), throwsA(isA<ConnectionClosedException>()));
+    });
+
+    test('Connect to non-existent host should throw', () {
+      final badserver = NntpServer('bogus', '');
+      expect(badserver.connect, throwsA(isA<FailedToOpenConnectionException>()));
+    });
+
   });
 
   group("Integration tests using nntp.aioe.org", () {
