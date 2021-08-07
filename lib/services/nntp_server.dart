@@ -29,6 +29,11 @@ class FailedToOpenConnectionException extends NntpServerException {
   FailedToOpenConnectionException(String message): super(message);
 }
 
+/// Failure to authenticate
+class AuthenticationFailureException extends NntpServerException {
+  AuthenticationFailureException(String message): super(message);
+}
+
 /// Attempt to perform an operation when the connection is not open.
 class ConnectionClosedException extends NntpServerException {
   ConnectionClosedException(String message): super(message);
@@ -85,6 +90,16 @@ class Response {
   }
 }
 
+class AuthInfo {
+  String userName;
+  String passWord;
+
+  AuthInfo(this.userName, this.passWord);
+}
+
+/// Utility function to handle maybe null responses
+bool OK(Response? response) => response?.isOK ?? false;
+
 /// A news server that handles the connection and basic communication.
 ///
 /// This is a very simple layer that handles traffic back an forth but doesn't
@@ -97,7 +112,11 @@ class Response {
 class NntpServer with UiLoggy{
   String name;
   String hostName;
+  AuthInfo? authInfo;
   int    portNumber;
+
+  Response? _connectResponse;
+  Response? _authResponse;
 
   var connectTimeout = Duration(seconds: 5000);
 
@@ -177,7 +196,7 @@ class NntpServer with UiLoggy{
             .transform(const LineSplitter())
             .asBroadcastStream();
 
-        _stream.listen((event) { },
+        _stream.listen((event) { loggy.debug("Data: [$event]");},
             onError: (error) => _handleError('listen on stream error', error),
             onDone: () {
               loggy.debug("name=$name hostName=$hostName portNumber=$portNumber is done!");
@@ -187,23 +206,56 @@ class NntpServer with UiLoggy{
     }
 
     loggy.debug("ConnectToServer for name=$name done.");
-    return handleSingleLineResponse(_stream);
+    _connectResponse = await handleSingleLineResponse(_stream);
+
+    if (OK(_connectResponse)) {
+      await authenticate();
+    }
+    else {
+      throw UnexpectedError(_exceptionMessage("Failed connection response: $_connectResponse"));
+    }
+
+    return _connectResponse!;
+  }
+
+  /// Authenticate if needed
+  Future<void> authenticate() async {
+    if (authInfo != null) {  // authentication needed
+      var ai = authInfo!;
+      loggy.debug("Do authenticate");
+      var user_response = await executeSingleLineRequest("authinfo user ${ai.userName}");
+      if (OK(user_response)) {
+        loggy.debug("OK username -- send password");
+        var pass_response = await executeSingleLineRequest("authinfo pass ${ai.passWord}");
+        if (OK(pass_response)) {
+          loggy.debug("OK password");
+          return;
+        }
+        else {
+          throw AuthenticationFailureException(_exceptionMessage("Failed on password authentication: $pass_response"));
+        }
+      }
+      else {
+        throw AuthenticationFailureException(_exceptionMessage("Failed on username authentication: $user_response"));
+      }
+    }
+
+    return Future<void>.value();
   }
 
   /// Execute a multiline request.
   Future<Response> executeMultilineRequest(String request) async {
     _socket.add(encodeForServer(request));
-    var responseStream = _stream;
-    return handleMultiLineResponse(responseStream);
+    return handleMultiLineResponse(_stream, request);
   }
 
   /// Execute a single line request.
   Future<Response> executeSingleLineRequest(String request) async {
-    _socket.add(encodeForServer(request));
-    return handleSingleLineResponse(_stream);
+    return handleSingleLineResponse(_stream, request);
   }
 
   /// Fix string [l] by unstuffing any leading dot.
+  /// TODO Test case!
   String fixLine(String l) {
     return (l.startsWith("..") ? l.substring(1) : l);
   }
@@ -255,8 +307,12 @@ class NntpServer with UiLoggy{
 
   /// Handle the response to a command which returns a single line, which
   /// will be parsed into [statusCode] and [statusLine].
-  Future<Response> handleSingleLineResponse (Stream<String> stream) async {
-    return makeResponse([await stream.first], []);
+  Future<Response> handleSingleLineResponse (Stream<String> stream, [String? request]) async {
+    var responseStream = stream.first;
+    if (request != null) {
+      _socket.add(encodeForServer(request));
+    }
+    return makeResponse([await responseStream], []);
     //TODO Error handling here?
   }
 
@@ -270,12 +326,18 @@ class NntpServer with UiLoggy{
   /// If the header contains 'key: value' specifications setting [mappedHeader]
   /// will parse them and make them available as [header(key)].
   ///
-  Future<Response> handleMultiLineResponse(Stream<String> stream, [mappedHeader=false]) async {
+  Future<Response> handleMultiLineResponse(Stream<String> stream, [String? request, mappedHeader=false]) async {
     List<String> header = [];
     List<String> body = [];
     var inHeader = true;
 
-    await stream.takeWhile((l) => l.trimRight() != ".").forEach((element) {
+    var lines = stream.takeWhile((l) => l.trimRight() != ".");
+
+    if (request != null) {
+      _socket.add(encodeForServer(request));
+
+    }
+    await lines.forEach((element) {
       final line = fixLine(element.trimRight());
 
       if (inHeader) {

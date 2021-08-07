@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:loggy/loggy.dart';
 import 'package:test/test.dart';
@@ -12,8 +11,9 @@ void main() {
   late NntpServer server;
 
   setUp(() {
-    server = NntpServer("test_no_auth", "nntp.aioe.org");
-    // server = NntpServer("faix-server", 'localhost', 65432);
+    // server = NntpServer("test_no_auth", "nntp.aioe.org");
+    // server = NntpServer("faux-server", 'localhost', 65432);
+    server = NntpServer('usenetserver', 'news.usenetserver.com');
   });
 
   group('Response Handling', () {
@@ -126,7 +126,7 @@ void main() {
       ];
 
       final stream = Stream.fromIterable(responseLines).transform(LineSplitter());
-      final response = await server.handleMultiLineResponse(stream, true);
+      final response = await server.handleMultiLineResponse(stream, null, true);
 
       expect(response.statusCode, '220');
       expect(response.isOK, true);
@@ -160,9 +160,26 @@ void main() {
 
   });
 
-  group("Integration tests using nntp.aioe.org", () {
+  group("Integration tests using nntp.aioe.org or such", () {
 
     test('Connect to server without credentials', () async {
+      expect(server, isNotNull);
+      expect(server.isClosed, true, reason: "Server starts closed");
+      expect(server.isOpen, false, reason: "Server starts no open");
+
+      final response = await server.connect();
+      expect(server.isClosed, false, reason: "Server not closed after connect");
+      expect(server.isOpen, true, reason: "Server open after connect");
+      expect(response.statusCode, '200');
+      expect(response.isOK, true, reason: "Connect worked");
+
+      await expectLater(
+          server.close(), completes, reason: "Close should complete");
+      expect(server.isClosed, true, reason: "Server closed after close");
+    });
+
+    test('Connect to server with credentials', () async {
+      server.authInfo = AuthInfo(userName, passWord);
       expect(server, isNotNull);
       expect(server.isClosed, true, reason: "Server starts closed");
       expect(server.isOpen, false, reason: "Server starts no open");
@@ -195,6 +212,7 @@ void main() {
     });
 
     test('Get capabilities', () async {
+      server.authInfo = AuthInfo(userName, passWord);
       final connectResponse = await server.connect();
       expect(connectResponse.isOK, true);
 

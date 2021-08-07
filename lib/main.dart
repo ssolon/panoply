@@ -72,8 +72,9 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
 
   List<Widget> _buildSubscriptionList(BuildContext context) {
     return <Widget>[
-      _buildSubscriptionItem('alt.test.group1'),
-      _buildSubscriptionItem('alt.test.group2'),
+      _buildSubscriptionItem('aioe.system'),
+      _buildSubscriptionItem('alt.free.newsservers'),
+      _buildSubscriptionItem('alt.test'),
     ];
   }
 
