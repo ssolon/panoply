@@ -16,6 +16,10 @@ void main() {
     server = NntpServer('usenetserver', 'news.usenetserver.com');
   });
 
+  tearDown(() {
+    server.close();
+  });
+
   group('Response Handling', () {
     test('Make empty header', () {
       final response = server.makeResponse([], []);
@@ -285,10 +289,11 @@ void main() {
 
       final response = await server.executeMultilineRequest("capabilities");
       expect(response.isOK, true);
-      print(response.headers);
+      expect(response.statusCode, '101');
 
       final quitResponse = await server.executeSingleLineRequest("quit");
       expect(quitResponse.isOK, true);
+      expect(quitResponse.statusCode,'205');
     });
   });
 

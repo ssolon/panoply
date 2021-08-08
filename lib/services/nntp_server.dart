@@ -45,8 +45,8 @@ class ConnectionAlreadyOpenException extends NntpServerException {
 }
 
 /// Received an [error] from the connection/stream.
-class UnexpectedError extends NntpServerException {
-  UnexpectedError(String message): super(message);
+class UnexpectedErrorException extends NntpServerException {
+  UnexpectedErrorException(String message): super(message);
 }
 
 /// General response from the server.
@@ -102,7 +102,13 @@ class Capabilities {
   final Map<String, List<String>> capabilities = {};
   final optionSeparatorPattern = RegExp(r'\s+');
 
-  /// Add a capability entry from line of:
+  /// Has 'OVER' capability
+  bool get hasOver => has('over');
+
+  /// Has 'XOVER' capability
+  bool get hasXover => has('xover');
+
+  /// Add a capability entry from [line] of:
   ///     name [option...]
   void add(String line) {
     var elements = line.toLowerCase().split(optionSeparatorPattern);
@@ -158,6 +164,7 @@ class NntpServer with UiLoggy{
   /// Return socket for host access. Throws exception if connection closed.
   Socket get _socket {
     if (__realSocket != null) {
+      _autoConnect();
       return __realSocket!;
     }
 
@@ -166,16 +173,30 @@ class NntpServer with UiLoggy{
 
   /// Return stream for host. Throws exception if stream inaccessible (connection closed?).
   Stream<String> get _stream {
+    _autoConnect();
     if (__realStream != null) {
       return __realStream!;
     }
 
     throw ConnectionClosedException(_exceptionMessage('Stream null'));
   }
+
+  /// CTOR
   NntpServer(this.name, this.hostName, [this.portNumber = 119]);
 
+  /// Try to connect to server if we're not open.
+  void _autoConnect() async {
+    if (!isConnectionOpen
+        || __realSocket == null
+        || __realStream == null) {
+      loggy.debug("Autoconnect name=$name hostName=$hostName portNumber=$portNumber");
+      await connect();
+    }
+  }
+
+  /// Handle an error by throwing an [UnexpectedErrorException].
   void _handleError(String what, String errorMessage) {
-    throw UnexpectedError(_exceptionMessage("$what:$errorMessage"));
+    throw UnexpectedErrorException(_exceptionMessage("$what:$errorMessage"));
   }
 
   /// Do we think the connection is open (might not be now, or soon not to be)
@@ -195,7 +216,10 @@ class NntpServer with UiLoggy{
 
       case ConnectionState.closed:
 
+        //
         // Create a new socket and connect
+        // Must use __real* values here to avoid triggering _autoConnect.
+        //
 
         loggy.debug("About to connect to hostName=$hostName on portNumber=$portNumber");
 
@@ -211,15 +235,21 @@ class NntpServer with UiLoggy{
         _connectionState = ConnectionState.open;
         loggy.debug("Socket opened");
 
+        __realStream = __realSocket!.encoding.decoder
+            .bind(__realSocket!)  // Don't use getter or _autoConnect will be invoked
+            .transform(const LineSplitter())
+            .asBroadcastStream();
+
+
+
+        //
+        // Setup error handling for the server
+        //
+
         // Is this useful or are errors thrown?
         var _errorHandlerStream = _socket.handleError((error) {
           _handleError("Stream error", error);
         });
-
-        __realStream = _socket.encoding.decoder
-            .bind(_socket)
-            .transform(const LineSplitter())
-            .asBroadcastStream();
 
         _stream.listen((event) { loggy.debug("Data: [$event]");},
             onError: (error) => _handleError('listen on stream error', error),
@@ -237,12 +267,12 @@ class NntpServer with UiLoggy{
       await authenticate();
     }
     else {
-      throw UnexpectedError(_exceptionMessage("Failed connection response: $_connectResponse"));
+      throw UnexpectedErrorException(_exceptionMessage("Failed connection response: $_connectResponse"));
     }
 
     // Make sure we have the current capabilities
 
-    executeUpdateCapabilities();
+    await executeUpdateCapabilities();
 
     return _connectResponse!;
   }
@@ -272,6 +302,12 @@ class NntpServer with UiLoggy{
     return Future<void>.value();
   }
 
+  void _sendRequest(String? request) {
+    if (request != null) {
+      loggy.debug("Sending request='$request' for $name");
+      _socket.add(encodeForServer(request));
+    }
+  }
   /// Execute a multiline request.
   Future<Response> executeMultilineRequest(String request) async {
     return handleMultiLineResponse(_stream, request);
@@ -289,6 +325,7 @@ class NntpServer with UiLoggy{
 
   /// Update [c] from [lines].
   void handleCapabilities(Capabilities c, List<String> lines) {
+    loggy.debug("Capabilities for name=$name $lines");
     lines.forEach( (l) => capabilities.add(l));
   }
 
@@ -347,9 +384,9 @@ class NntpServer with UiLoggy{
   /// will be parsed into [statusCode] and [statusLine].
   Future<Response> handleSingleLineResponse (Stream<String> stream, [String? request]) async {
     var responseStream = stream.first;
-    if (request != null) {
-      _socket.add(encodeForServer(request));
-    }
+
+    _sendRequest(request);
+
     return makeResponse([await responseStream], []);
     //TODO Error handling here?
   }
@@ -371,10 +408,8 @@ class NntpServer with UiLoggy{
 
     var lines = stream.takeWhile((l) => l.trimRight() != ".");
 
-    if (request != null) {
-      _socket.add(encodeForServer(request));
+    _sendRequest(request);
 
-    }
     await lines.forEach((element) {
       final line = fixLine(element.trimRight());
 
