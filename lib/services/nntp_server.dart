@@ -90,6 +90,7 @@ class Response {
   }
 }
 
+/// Authentication information for a server
 class AuthInfo {
   String userName;
   String passWord;
@@ -97,6 +98,28 @@ class AuthInfo {
   AuthInfo(this.userName, this.passWord);
 }
 
+class Capabilities {
+  final Map<String, List<String>> capabilities = {};
+  final optionSeparatorPattern = RegExp(r'\s+');
+
+  /// Add a capability entry from line of:
+  ///     name [option...]
+  void add(String line) {
+    var elements = line.toLowerCase().split(optionSeparatorPattern);
+    capabilities[elements.first] = elements.sublist(1);
+  }
+
+  /// Return true if our capability has [name] with optional [option].
+  bool has(String name, [String? option]) {
+    var options = capabilities[name.toLowerCase()];
+
+    if (options != null) { // found
+      return option != null ? options.contains(option.toLowerCase()) : true;
+    }
+
+    return false;
+  }
+}
 /// Utility function to handle maybe null responses
 bool OK(Response? response) => response?.isOK ?? false;
 
@@ -114,6 +137,8 @@ class NntpServer with UiLoggy{
   String hostName;
   AuthInfo? authInfo;
   int    portNumber;
+
+  final Capabilities capabilities = Capabilities();
 
   Response? _connectResponse;
   Response? _authResponse;
@@ -215,6 +240,10 @@ class NntpServer with UiLoggy{
       throw UnexpectedError(_exceptionMessage("Failed connection response: $_connectResponse"));
     }
 
+    // Make sure we have the current capabilities
+
+    executeUpdateCapabilities();
+
     return _connectResponse!;
   }
 
@@ -245,13 +274,22 @@ class NntpServer with UiLoggy{
 
   /// Execute a multiline request.
   Future<Response> executeMultilineRequest(String request) async {
-    _socket.add(encodeForServer(request));
     return handleMultiLineResponse(_stream, request);
   }
 
   /// Execute a single line request.
   Future<Response> executeSingleLineRequest(String request) async {
     return handleSingleLineResponse(_stream, request);
+  }
+
+  /// Get, and parse, the current capabilities.
+  Future<void> executeUpdateCapabilities() async {
+    handleCapabilities(capabilities, (await executeMultilineRequest('capabilities')).headers);
+  }
+
+  /// Update [c] from [lines].
+  void handleCapabilities(Capabilities c, List<String> lines) {
+    lines.forEach( (l) => capabilities.add(l));
   }
 
   /// Fix string [l] by unstuffing any leading dot.

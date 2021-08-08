@@ -160,6 +160,73 @@ void main() {
 
   });
 
+  group("Capabilities", () {
+    late Capabilities c;
+
+    setUp(() {
+      c = Capabilities();
+    });
+
+    test('Empty has nothing', () {
+      expect(c.capabilities.isEmpty, true);
+      expect(c.has('foo'), false);
+      expect(c.has('foo', 'bar'), false);
+    });
+    
+    test('Single no options', () {
+      expect(c.capabilities.isEmpty, true);
+      c.add('first');
+
+      expect(c.has('first'), true);
+      expect(c.has('foo'), false);
+    });
+
+    test('Two no options', () {
+      c.add('first');
+      c.add('second');
+      expect(c.has('second'), true);
+      expect(c.has('first'), true);
+    });
+
+    test('Three no options', () {
+      c.add('third ');
+      c.add('first');
+      c.add('second ');
+
+      expect(c.has('first'), true);
+      expect(c.has('second'), true);
+      expect(c.has('third'), true);
+
+      expect(c.has('foo'), false);
+      expect(c.has('first', 'opt1'), false);
+    });
+
+    test('Single one option', () {
+      c.add('first opt1');
+      expect(c.has('first'), true);
+      expect(c.has('first', 'opt1'), true);
+    });
+
+    test('Three some options', () {
+      c.add('FIRST');
+      c.add('second opt21');
+      c.add('third opt31 OPT32 opt33');
+
+      expect(c.has('first'), true);
+      expect(c.has('SECOND'), true);
+      expect(c.has('second', 'opt21'), true);
+      expect(c.has('third'), true);
+      expect(c.has('third', 'OPT31'), true);
+      expect(c.has('third', 'opt32'), true);
+      expect(c.has('third', 'opt33'), true);
+
+      expect(c.has('first', 'opt21'), false);
+      expect(c.has('second', 'opt31'), false);
+      expect(c.has('third', 'opt21'), false);
+    });
+
+  });
+
   group("Integration tests using nntp.aioe.org or such", () {
 
     test('Connect to server without credentials', () async {

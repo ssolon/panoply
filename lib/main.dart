@@ -1,5 +1,6 @@
 import 'package:loggy/loggy.dart';
 import 'package:flutter/material.dart';
+import 'package:panoply/views/headers.dart';
 
 void main() {
   Loggy.initLoggy();
@@ -66,7 +67,13 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
   Widget _buildSubscriptionItem(String name) {
     return ListTile(
       title: Text(name,),
-      onTap: () => loggy.error("You tapped $name"),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => HeaderList(group:name))
+        );
+      },
     );
   }
 
@@ -75,6 +82,7 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
       _buildSubscriptionItem('aioe.system'),
       _buildSubscriptionItem('alt.free.newsservers'),
       _buildSubscriptionItem('alt.test'),
+      _buildSubscriptionItem('rec.outdoors.rv-travel'),
     ];
   }
 
