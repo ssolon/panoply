@@ -1,7 +1,8 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:loggy/loggy.dart';
+import 'package:panoply/views/server_status.dart';
+
+import '../main.dart';
 
 class HeaderList extends StatefulWidget {
   const HeaderList({Key? key, required this.group}) : super(key: key);
@@ -13,7 +14,6 @@ class HeaderList extends StatefulWidget {
 }
 
 class _HeaderListState extends State<HeaderList> with UiLoggy {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,6 +28,10 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
           },
           child: Text('Go back!'),
         ),
+      ),
+      bottomSheet: Container(
+        padding: EdgeInsets.all(kBodyEdgeInsets),
+        child: ServerStatus(),
       ),
     );
   }

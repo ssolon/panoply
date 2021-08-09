@@ -1,11 +1,21 @@
 import 'package:loggy/loggy.dart';
 import 'package:flutter/material.dart';
+import 'package:panoply/services/news_service.dart';
+import 'package:panoply/services/nntp_server.dart';
 import 'package:panoply/views/headers.dart';
+import 'package:panoply/views/server_status.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   Loggy.initLoggy();
-  runApp(const MyApp());
+  runApp(
+      ChangeNotifierProvider(
+        create: (context) => NewsService(NntpServer('aioe', 'nntp.aioe.org')),
+        child: const MyApp()),
+      );
 }
+
+const kBodyEdgeInsets = 10.0;
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -27,7 +37,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Groups'),
+      home: MyHomePage(title: 'Groups'),
     );
   }
 }
@@ -95,8 +105,6 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
 
-    const kBodyEdgeInsets = 10.0;
-
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
@@ -108,6 +116,10 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
         child: ListView(
             children: _buildSubscriptionList(context),
         ),
+      ),
+      bottomSheet: Container(
+          padding: EdgeInsets.all(kBodyEdgeInsets),
+          child: ServerStatus(),
       ),
 
       floatingActionButton: FloatingActionButton(
