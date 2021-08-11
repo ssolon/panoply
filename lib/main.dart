@@ -1,3 +1,4 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
 import 'package:flutter/material.dart';
 import 'package:panoply/services/news_service.dart';
@@ -6,13 +7,23 @@ import 'package:panoply/views/headers.dart';
 import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
 
+import 'blocs/overviews_bloc.dart';
+
 void main() {
   Loggy.initLoggy();
+
   runApp(
-      ChangeNotifierProvider(
-        create: (context) => NewsService(NntpServer('aioe', 'nntp.aioe.org')),
-        child: const MyApp()),
-      );
+      MultiBlocProvider(
+          providers: [
+            BlocProvider<NewsService>(
+                create: (context) => NewsService(NntpServer('aioe', 'nntp.aioe.org'))
+            ),
+            BlocProvider<OverviewsBloc>(
+                create: (context) => OverviewsBloc()
+            ),
+          ],
+          child: const MyApp()),
+  );
 }
 
 const kBodyEdgeInsets = 10.0;
@@ -37,7 +48,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Groups'),
+      home: const MyHomePage(title: 'Groups'),
     );
   }
 }
@@ -79,9 +90,13 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
       title: Text(name,),
       onTap: () {
         Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => HeaderList(group:name))
+            context,
+            MaterialPageRoute(
+                builder: (context) {
+                  Provider.of<OverviewsBloc>(context).add(OverviewsBlocLoadEvent(name));
+                  return HeaderList(group:name);
+                }
+            )
         );
       },
     );
@@ -112,14 +127,14 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
         title: Text(widget.title),
       ),
       body: Container(
-        padding: EdgeInsets.all(kBodyEdgeInsets),
+        padding: const EdgeInsets.all(kBodyEdgeInsets),
         child: ListView(
             children: _buildSubscriptionList(context),
         ),
       ),
       bottomSheet: Container(
-          padding: EdgeInsets.all(kBodyEdgeInsets),
-          child: ServerStatus(),
+          padding: const EdgeInsets.all(kBodyEdgeInsets),
+          child: const ServerStatus(),
       ),
 
       floatingActionButton: FloatingActionButton(
