@@ -1,7 +1,7 @@
 /// Overview for articles
 /// Some
 
-class Overview {
+class Header {
   int number;
   String subject;
   String from;
@@ -12,7 +12,7 @@ class Overview {
   int lines;
   String xref;
 
-  Overview(
+  Header(
       this.number,
       this.subject,
       this.from,
@@ -25,10 +25,10 @@ class Overview {
       );
 }
 
-class ThreadedOverview extends Overview {
-  List<ThreadedOverview>? replys;
+class ThreadedHeader extends Header {
+  List<ThreadedHeader>? replys;
 
-  ThreadedOverview(
+  ThreadedHeader(
       number,
       subject,
       from,

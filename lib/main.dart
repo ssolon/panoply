@@ -7,7 +7,7 @@ import 'package:panoply/views/headers.dart';
 import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
 
-import 'blocs/overviews_bloc.dart';
+import 'blocs/headers_bloc.dart';
 
 void main() {
   Loggy.initLoggy();
@@ -18,8 +18,8 @@ void main() {
             BlocProvider<NewsService>(
                 create: (context) => NewsService(NntpServer('aioe', 'nntp.aioe.org'))
             ),
-            BlocProvider<OverviewsBloc>(
-                create: (context) => OverviewsBloc()
+            BlocProvider<HeadersBloc>(
+                create: (context) => HeadersBloc()
             ),
           ],
           child: const MyApp()),

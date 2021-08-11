@@ -5,6 +5,9 @@ import 'package:test/test.dart';
 
 import 'package:panoply/services/nntp_server.dart';
 
+const userName='ssolon';
+const passWord='Techprox0';
+
 void main() {
   Loggy.initLoggy();
 

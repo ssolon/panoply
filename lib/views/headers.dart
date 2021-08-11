@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
-import 'package:panoply/blocs/overviews_bloc.dart';
+import 'package:panoply/blocs/headers_bloc.dart';
 import 'package:panoply/services/news_service.dart';
 import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +27,7 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
   Widget build(BuildContext context) {
     // var service = Provider.of<NewsService>(context, listen: false);
     if (group != loadedGroup) {
-      Provider.of<OverviewsBloc>(context).add(OverviewsBlocLoadEvent(group));
+      Provider.of<HeadersBloc>(context).add(HeadersBlocLoadEvent(group));
     }
 
     return Scaffold(
@@ -35,20 +35,20 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
         title: Text(widget.group),
       ),
       body: Container(
-      child: BlocBuilder<OverviewsBloc, OverviewsBlocState>(
+      child: BlocBuilder<HeadersBloc, HeadersBlocState>(
           builder: (context, state) {
-            if (state is OverviewsBlocLoadedState) {
+            if (state is HeadersBlocLoadedState) {
               loadedGroup = group;
               return ListView(
                   key: Key(group),
-                  children: state.overviews
-                      .map((i) => _buildOverviewListItem(context, i))
+                  children: state.headers
+                      .map((i) => _buildHeaderListItem(context, i))
                       .toList()
               );
-            } else if (state is OverviewsBlocLoadingState) {
-              return Center(child: Text("Loading... ($state)"));
+            } else if (state is HeadersBlocLoadingState) {
+              return Center(child: Text("Loading ${state.groupName}... "));
             } else {
-              return Center(child: Text("Unknow state=$state"));
+              return Center(child: Text("Unknown state=$state"));
             }
           })
       ),
@@ -64,7 +64,7 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
     );
   }
 
-  Widget _buildOverviewListItem(context, overviewItem) {
+  Widget _buildHeaderListItem(context, overviewItem) {
     return ListTile (
       title: Text(overviewItem.subject),
     );

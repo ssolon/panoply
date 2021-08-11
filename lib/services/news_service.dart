@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:panoply/models/overview.dart';
+import 'package:panoply/models/header.dart';
 import 'package:panoply/services/nntp_server.dart';
 
 ///
@@ -9,9 +9,9 @@ import 'package:panoply/services/nntp_server.dart';
 
 abstract class NewsServiceEvent {}
 
-class OverviewsForRequested extends NewsServiceEvent {
+class HeadersForRequested extends NewsServiceEvent {
   final String groupName;
-  OverviewsForRequested(this.groupName);
+  HeadersForRequested(this.groupName);
 }
 
 abstract class NewsServiceState {}
@@ -19,22 +19,22 @@ abstract class NewsServiceState {}
 /// Initial state
 class NewsServiceInitialState extends NewsServiceState {}
 
-class NewsServiceStartLoadingOverviewsState extends NewsServiceState {
+class NewsServiceStartLoadingHeadersState extends NewsServiceState {
   final String groupName;
-  NewsServiceStartLoadingOverviewsState(this.groupName);
+  NewsServiceStartLoadingHeadersState(this.groupName);
 }
 
-class NewsServiceDoneLoadingOverviewsState extends NewsServiceState {
+class NewsServiceDoneLoadingHeadersState extends NewsServiceState {
   final String groupName;
   final NntpServer server;
   final int count;
-  final List<ThreadedOverview> overViews;
+  final List<ThreadedHeader> headers;
 
-  NewsServiceDoneLoadingOverviewsState(
+  NewsServiceDoneLoadingHeadersState(
       this.groupName,
       this.server,
       this.count,
-      this.overViews);
+      this.headers);
 }
 
 class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
