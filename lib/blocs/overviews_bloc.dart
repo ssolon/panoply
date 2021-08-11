@@ -1,6 +1,7 @@
 
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:loggy/loggy.dart';
 import 'package:panoply/models/overview.dart';
 
 abstract class OverviewsBlocEvent {} //TODO Equatable?
@@ -10,7 +11,13 @@ class OverviewsBlocLoadEvent extends OverviewsBlocEvent {
 }
 
 abstract class OverviewsBlocState {}
+
 class OverviewsBlocInitialState extends OverviewsBlocState {}
+
+class OverviewsBlocLoadingState extends OverviewsBlocState {
+  final String groupName;
+  OverviewsBlocLoadingState(this.groupName);
+}
 
 class OverviewsBlocLoadedState extends OverviewsBlocState {
   final String groupName;
@@ -26,6 +33,7 @@ class OverviewsBloc extends Bloc<OverviewsBlocEvent, OverviewsBlocState> {
   @override
   Stream<OverviewsBlocState> mapEventToState(OverviewsBlocEvent event) async* {
     if (event is OverviewsBlocLoadEvent) {
+      yield OverviewsBlocLoadingState(event.groupName);
       yield OverviewsBlocLoadedState(event.groupName, overviewsFor(event.groupName));
     } else {
       throw UnimplementedError("Event = $event");

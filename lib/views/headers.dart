@@ -19,12 +19,17 @@ class HeaderList extends StatefulWidget {
 
 class _HeaderListState extends State<HeaderList> with UiLoggy {
   String group;
+  String loadedGroup = '';
 
   _HeaderListState(this.group);
 
   @override
   Widget build(BuildContext context) {
     // var service = Provider.of<NewsService>(context, listen: false);
+    if (group != loadedGroup) {
+      Provider.of<OverviewsBloc>(context).add(OverviewsBlocLoadEvent(group));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.group),
@@ -33,13 +38,17 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
       child: BlocBuilder<OverviewsBloc, OverviewsBlocState>(
           builder: (context, state) {
             if (state is OverviewsBlocLoadedState) {
+              loadedGroup = group;
               return ListView(
+                  key: Key(group),
                   children: state.overviews
                       .map((i) => _buildOverviewListItem(context, i))
-                      .toList(growable: false)
+                      .toList()
               );
-            } else {
+            } else if (state is OverviewsBlocLoadingState) {
               return Center(child: Text("Loading... ($state)"));
+            } else {
+              return Center(child: Text("Unknow state=$state"));
             }
           })
       ),

@@ -91,12 +91,7 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
       onTap: () {
         Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (context) {
-                  Provider.of<OverviewsBloc>(context).add(OverviewsBlocLoadEvent(name));
-                  return HeaderList(group:name);
-                }
-            )
+            MaterialPageRoute(builder: (context) => HeaderList(group:name))
         );
       },
     );
