@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
 import 'package:panoply/blocs/headers_bloc.dart';
+import 'package:panoply/models/header.dart';
 import 'package:panoply/services/news_service.dart';
 import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
@@ -58,7 +59,10 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Fetch headers',
-        onPressed: () {  },
+        onPressed: () {
+          final criteria = FetchCriteria(FetchOp.lastNHeaders, 10); //TODO From user input
+          BlocProvider.of<HeadersBloc>(context).add(HeadersForGroupFetchEvent(criteria));
+        },
         child: const Icon(Icons.download),
       ),
     );

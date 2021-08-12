@@ -8,18 +8,26 @@ import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
 
 import 'blocs/headers_bloc.dart';
+import 'blocs/status_bloc.dart';
 
 void main() {
   Loggy.initLoggy();
 
+  Bloc.observer = Observer();
+
   runApp(
       MultiBlocProvider(
           providers: [
+            BlocProvider<StatusBloc>(
+              create: (context) => StatusBloc()
+            ),
             BlocProvider<NewsService>(
-                create: (context) => NewsService(NntpServer('aioe', 'nntp.aioe.org'))
+                create: (context) => NewsService(
+                    NntpServer('aioe', 'nntp.aioe.org'),
+                    BlocProvider.of<StatusBloc>(context))
             ),
             BlocProvider<HeadersBloc>(
-                create: (context) => HeadersBloc()
+                create: (context) => HeadersBloc(BlocProvider.of<NewsService>(context)),
             ),
           ],
           child: const MyApp()),
@@ -138,5 +146,13 @@ class _MyHomePageState extends State<MyHomePage> with UiLoggy {
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+}
+
+class Observer extends BlocObserver {
+  @override
+  void onChange(BlocBase bloc, Change change) {
+    super.onChange(bloc, change);
+    Loggy("Observer").debug("${bloc.runtimeType} $change");
   }
 }
