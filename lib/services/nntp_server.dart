@@ -10,7 +10,8 @@ enum ConnectionState { closed, open, loggedIn, error }
 
 // Status codes we may need
 
-const invalidHeaderFormat = '500';  // No status code. Should be command specific?
+const invalidHeaderFormat =
+    '500'; // No status code. Should be command specific?
 
 // Base exception for all our exceptions.
 class NntpServerException implements Exception {
@@ -18,7 +19,8 @@ class NntpServerException implements Exception {
 
   NntpServerException(this.message);
 
-  @override toString() {
+  @override
+  toString() {
     return "${this.runtimeType.toString()}:$message";
   }
 }
@@ -26,27 +28,27 @@ class NntpServerException implements Exception {
 /// Couldn't open the connection for some reason which hopefully is explained
 /// in the [message].
 class FailedToOpenConnectionException extends NntpServerException {
-  FailedToOpenConnectionException(String message): super(message);
+  FailedToOpenConnectionException(String message) : super(message);
 }
 
 /// Failure to authenticate
 class AuthenticationFailureException extends NntpServerException {
-  AuthenticationFailureException(String message): super(message);
+  AuthenticationFailureException(String message) : super(message);
 }
 
 /// Attempt to perform an operation when the connection is not open.
 class ConnectionClosedException extends NntpServerException {
-  ConnectionClosedException(String message): super(message);
+  ConnectionClosedException(String message) : super(message);
 }
 
 /// Connection is already open on [connect] request.
 class ConnectionAlreadyOpenException extends NntpServerException {
-  ConnectionAlreadyOpenException(String message): super(message);
+  ConnectionAlreadyOpenException(String message) : super(message);
 }
 
 /// Received an [error] from the connection/stream.
 class UnexpectedErrorException extends NntpServerException {
-  UnexpectedErrorException(String message): super(message);
+  UnexpectedErrorException(String message) : super(message);
 }
 
 /// General response from the server.
@@ -67,12 +69,12 @@ class Response {
   final Map<String, String> header;
   final List<String> body;
 
-
   /// Predicate that tests [statusCode].
   bool get isOK => int.parse(statusCode) < 400;
 
   /// CTOR
-  Response(this.statusCode, this.statusLine, this.headers, this.body, this.header);
+  Response(
+      this.statusCode, this.statusLine, this.headers, this.body, this.header);
 
   /// Parse 'key: value' lines into the returned map.
   static Map<String, String> parseHeaderLinesToMap(List<String> headerLines) {
@@ -119,13 +121,15 @@ class Capabilities {
   bool has(String name, [String? option]) {
     var options = capabilities[name.toLowerCase()];
 
-    if (options != null) { // found
+    if (options != null) {
+      // found
       return option != null ? options.contains(option.toLowerCase()) : true;
     }
 
     return false;
   }
 }
+
 /// Utility function to handle maybe null responses
 bool OK(Response? response) => response?.isOK ?? false;
 
@@ -142,7 +146,7 @@ class NntpServer {
   String name;
   String hostName;
   AuthInfo? authInfo;
-  int    portNumber;
+  int portNumber;
 
   final log = Loggy('NntpServer');
 
@@ -161,7 +165,8 @@ class NntpServer {
   Socket? __realSocket; // Use getter _socket
   Stream<String>? __realStream; // Use getter _stream
 
-  String _exceptionMessage(detail) => "$detail: name=$name hostName=$hostName portNumber=$portNumber";
+  String _exceptionMessage(detail) =>
+      "$detail: name=$name hostName=$hostName portNumber=$portNumber";
 
   /// Return socket for host access. Throws exception if connection closed.
   Future<Socket> get _socket async {
@@ -188,10 +193,9 @@ class NntpServer {
 
   /// Try to connect to server if we're not open.
   Future<void> _autoConnect() async {
-    if (!isConnectionOpen
-        || __realSocket == null
-        || __realStream == null) {
-      log.debug("Autoconnect name=$name hostName=$hostName portNumber=$portNumber");
+    if (!isConnectionOpen || __realSocket == null || __realStream == null) {
+      log.debug(
+          "Autoconnect name=$name hostName=$hostName portNumber=$portNumber");
       await connect();
     }
   }
@@ -205,7 +209,8 @@ class NntpServer {
   bool get isConnectionOpen => _connectionState == ConnectionState.open;
 
   /// Converts to server coding and adds CRLF.
-  Future<List<int>> encodeForServer(String s) async => (await _socket).encoding.encoder.convert(s + '\r\n');
+  Future<List<int>> encodeForServer(String s) async =>
+      (await _socket).encoding.encoder.convert(s + '\r\n');
 
   /// Open a connection the the server at [name]/[portNumber] and return the
   /// response.
@@ -214,7 +219,8 @@ class NntpServer {
 
     switch (_connectionState) {
       case ConnectionState.open:
-        throw ConnectionAlreadyOpenException(_exceptionMessage('Connection already open'));
+        throw ConnectionAlreadyOpenException(
+            _exceptionMessage('Connection already open'));
 
       case ConnectionState.closed:
 
@@ -223,26 +229,29 @@ class NntpServer {
         // Must use __real* values here to avoid triggering _autoConnect.
         //
 
-        log.debug("About to connect to hostName=$hostName on portNumber=$portNumber");
+        log.debug(
+            "About to connect to hostName=$hostName on portNumber=$portNumber");
 
         try {
-          __realSocket = await Socket.connect(hostName, portNumber, timeout: connectTimeout);
+          __realSocket = await Socket.connect(hostName, portNumber,
+              timeout: connectTimeout);
           if (__realSocket == null) {
-            throw FailedToOpenConnectionException(_exceptionMessage('failed to connect - socket null!'));
-          }}
-        on SocketException catch (e) {
-          throw FailedToOpenConnectionException(_exceptionMessage("Exception opening connection:$e"));
+            throw FailedToOpenConnectionException(
+                _exceptionMessage('failed to connect - socket null!'));
+          }
+        } on SocketException catch (e) {
+          throw FailedToOpenConnectionException(
+              _exceptionMessage("Exception opening connection:$e"));
         }
 
         _connectionState = ConnectionState.open;
         log.debug("Socket opened");
 
         __realStream = __realSocket!.encoding.decoder
-            .bind(__realSocket!)  // Don't use getter or _autoConnect will be invoked
+            .bind(
+                __realSocket!) // Don't use getter or _autoConnect will be invoked
             .transform(const LineSplitter())
             .asBroadcastStream();
-
-
 
         //
         // Setup error handling for the server
@@ -253,10 +262,11 @@ class NntpServer {
           _handleError("Stream error", error);
         });
 
-        (await _stream).listen((event) { /*log.debug("Data: [$event]");*/},
+        (await _stream).listen((event) {/*log.debug("Data: [$event]");*/},
             onError: (error) => _handleError('listen on stream error', error),
             onDone: () {
-              log.debug("name=$name hostName=$hostName portNumber=$portNumber is done!");
+              log.debug(
+                  "name=$name hostName=$hostName portNumber=$portNumber is done!");
               _connectionState = ConnectionState.closed;
               __realSocket?.destroy();
             });
@@ -267,9 +277,9 @@ class NntpServer {
 
     if (OK(_connectResponse)) {
       await authenticate();
-    }
-    else {
-      throw UnexpectedErrorException(_exceptionMessage("Failed connection response: $_connectResponse"));
+    } else {
+      throw UnexpectedErrorException(
+          _exceptionMessage("Failed connection response: $_connectResponse"));
     }
 
     // Make sure we have the current capabilities
@@ -281,23 +291,26 @@ class NntpServer {
 
   /// Authenticate if needed
   Future<void> authenticate() async {
-    if (authInfo != null) {  // authentication needed
+    if (authInfo != null) {
+      // authentication needed
       var ai = authInfo!;
       log.debug("Do authenticate");
-      var user_response = await executeSingleLineRequest("authinfo user ${ai.userName}");
+      var user_response =
+          await executeSingleLineRequest("authinfo user ${ai.userName}");
       if (OK(user_response)) {
         log.debug("OK username -- send password");
-        var pass_response = await executeSingleLineRequest("authinfo pass ${ai.passWord}");
+        var pass_response =
+            await executeSingleLineRequest("authinfo pass ${ai.passWord}");
         if (OK(pass_response)) {
           log.debug("OK password");
           return;
+        } else {
+          throw AuthenticationFailureException(_exceptionMessage(
+              "Failed on password authentication: $pass_response"));
         }
-        else {
-          throw AuthenticationFailureException(_exceptionMessage("Failed on password authentication: $pass_response"));
-        }
-      }
-      else {
-        throw AuthenticationFailureException(_exceptionMessage("Failed on username authentication: $user_response"));
+      } else {
+        throw AuthenticationFailureException(_exceptionMessage(
+            "Failed on username authentication: $user_response"));
       }
     }
 
@@ -310,6 +323,7 @@ class NntpServer {
       (await _socket).add(await encodeForServer(request));
     }
   }
+
   /// Execute a multiline request.
   Future<Response> executeMultilineRequest(String request) async {
     return handleMultiLineResponse(await _stream, request);
@@ -322,13 +336,14 @@ class NntpServer {
 
   /// Get, and parse, the current capabilities.
   Future<void> executeUpdateCapabilities() async {
-    handleCapabilities(capabilities, (await executeMultilineRequest('capabilities')).headers);
+    handleCapabilities(
+        capabilities, (await executeMultilineRequest('capabilities')).headers);
   }
 
   /// Update [c] from [lines].
   void handleCapabilities(Capabilities c, List<String> lines) {
     log.debug("Capabilities for name=$name $lines");
-    lines.forEach( (l) => capabilities.add(l));
+    lines.forEach((l) => capabilities.add(l));
   }
 
   /// Fix string [l] by unstuffing any leading dot.
@@ -337,18 +352,19 @@ class NntpServer {
     return (l.startsWith("..") ? l.substring(1) : l);
   }
 
-  String trunc(String s, [int maxLength=100]) {
+  String trunc(String s, [int maxLength = 100]) {
     return s.length > maxLength ? s.substring(0, maxLength) + "..." : s;
   }
 
   /// Make a status value from the first line of [headers] and remove status value.
   String _makeStatus(List<String> headers) {
-    final String status;  // Always 3 numeric characters
+    final String status; // Always 3 numeric characters
     if (headers.isNotEmpty) {
-      status = headers[0].length > 2 ? headers[0].substring(0,3) : invalidHeaderFormat;
+      status = headers[0].length > 2
+          ? headers[0].substring(0, 3)
+          : invalidHeaderFormat;
       headers[0] = headers[0].length > 3 ? headers[0].substring(4) : "";
-    }
-    else {
+    } else {
       status = invalidHeaderFormat;
     }
 
@@ -357,7 +373,8 @@ class NntpServer {
 
   /// Create a [Response] object from [headerLines], [body] parsing [headerLines]
   /// into a map when [mappedHeader] is true.
-  Response makeResponse(List<String> headerLines, List<String> body, [mappedHeader=false]) {
+  Response makeResponse(List<String> headerLines, List<String> body,
+      [mappedHeader = false]) {
     final statusCode = _makeStatus(headerLines);
 
     // First line is always status -- if there
@@ -367,24 +384,23 @@ class NntpServer {
     if (headerLines.isNotEmpty) {
       statusLine = headerLines[0].trimRight();
       headers = headerLines.skip(1).toList(); // First line is always status
-    }
-    else {
-      statusLine ='';  // So everybody else doesn't have to check
+    } else {
+      statusLine = ''; // So everybody else doesn't have to check
       headers = [];
     }
 
     // Parse any possible header map values
 
-    final Map<String, String> headerMap = mappedHeader
-        ? Response.parseHeaderLinesToMap(headers)
-        : {};
+    final Map<String, String> headerMap =
+        mappedHeader ? Response.parseHeaderLinesToMap(headers) : {};
 
     return Response(statusCode, statusLine, headers, body, headerMap);
   }
 
   /// Handle the response to a command which returns a single line, which
   /// will be parsed into [statusCode] and [statusLine].
-  Future<Response> handleSingleLineResponse (Stream<String> stream, [String? request]) async {
+  Future<Response> handleSingleLineResponse(Stream<String> stream,
+      [String? request]) async {
     var responseStream = stream.first;
 
     _sendRequest(request);
@@ -403,7 +419,8 @@ class NntpServer {
   /// If the header contains 'key: value' specifications setting [mappedHeader]
   /// will parse them and make them available as [header(key)].
   ///
-  Future<Response> handleMultiLineResponse(Stream<String> stream, [String? request, mappedHeader=false]) async {
+  Future<Response> handleMultiLineResponse(Stream<String> stream,
+      [String? request, mappedHeader = false]) async {
     List<String> header = [];
     List<String> body = [];
     var inHeader = true;
@@ -418,12 +435,10 @@ class NntpServer {
       if (inHeader) {
         if (line == "") {
           inHeader = false;
-        }
-        else {
+        } else {
           header.add(line);
         }
-      }
-      else {
+      } else {
         body.add(line);
       }
     });
