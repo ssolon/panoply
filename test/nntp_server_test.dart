@@ -152,13 +152,15 @@ void main() {
   });
 
   group('Error handling', () {
-    test('SingleLine request without connection should throw', () {
-      expect(() => server.executeSingleLineRequest('foo'), throwsA(isA<ConnectionClosedException>()));
-    });
-
-    test('MultiLine request without connection should throw', () {
-      expect(() => server.executeMultilineRequest('foo'), throwsA(isA<ConnectionClosedException>()));
-    });
+    //!!!! Autoconnect renders these tests invalid
+    // test('SingleLine request without connection should throw', () {
+    //   expect(() => server.executeSingleLineRequest('foo'), throwsA(isA<ConnectionClosedException>()));
+    // });
+    //
+    // test('MultiLine request without connection should throw', () {
+    //   expect(() => server.executeMultilineRequest('foo'), throwsA(isA<ConnectionClosedException>()));
+    // });
+    //!!!!
 
     test('Connect to non-existent host should throw', () {
       final badserver = NntpServer('bogus', '');
