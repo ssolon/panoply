@@ -68,6 +68,40 @@ void main() {
       expect(h.getInt('onespec'), 0, reason:'int onespace');
     });
 
+  });
+
+  group("Criteria", () {
+    test("allHeaders", () {
+      final c = FetchCriteria(FetchOp.allHeaders, null);
+      final l = [1,2,3,4,5];
+
+      expect(c.articleRange, '', reason: 'articleRange');
+      expect(c.iterableFor(l).toList(), l);
+    });
+
+    test("newHeaders", () {
+      final c = FetchCriteria(FetchOp.newHeaders, 3);
+      final l = [1,2,3,4,5];
+
+      expect(c.articleRange, '3-', reason:'articleRange');
+      expect(c.iterableFor(l).toList(), l, reason: 'iterable');
+    });
+
+    test("lastNHeaders", () {
+      final c = FetchCriteria(FetchOp.lastNHeaders, 3);
+      final l = [1,2,3,4,5];
+
+      expect(c.articleRange, '', reason:'articleRange');
+      expect(c.iterableFor(l).toList(), [3,4,5], reason: 'iterable');
+    });
+
+    test("lastNDays", () {
+      final c = FetchCriteria(FetchOp.lastNDays, 3);
+      final l = [1,2,3,4,5];
+
+      expect(c.articleRange, '', reason:'articleRange');
+      expect(c.iterableFor(l).toList(), [5,4,3,2,1], reason: 'iterable');
+    });
 
   });
 }

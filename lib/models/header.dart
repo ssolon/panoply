@@ -2,14 +2,46 @@ import 'package:flutter/foundation.dart';
 
 /// Header fetch request criteria
 
+/// Type of fetch
 enum FetchOp { lastNDays, newHeaders, allHeaders, lastNHeaders}
 
 @immutable
 class FetchCriteria {
+  /// Type of fetch
   final FetchOp op;
+  /// Value for value needing op. Meaning varies by op.
   final int? n;
 
   FetchCriteria(this.op, this.n);
+
+  /// Create an iterable appropriate for this criteria
+  Iterable<T> iterableFor<T>(List<T> list) {
+    switch (op) {
+      case FetchOp.newHeaders: // Should have been handled by articleRange
+      case FetchOp.allHeaders:
+        return list; // Just process everything
+
+      case FetchOp.lastNHeaders:
+        return list.skip(list.length - (n ?? 0));
+
+      case FetchOp.lastNDays:
+        return list.reversed; // Will have to fetch header to check date
+    }
+  }
+
+  /// Return a string for a server request range from our criteria.
+  String get articleRange {
+    if (op == FetchOp.newHeaders) {
+      if (n != null) {
+        return "$n-";
+      }
+      else {
+        throw Exception("FetchCriteria: null 'n' for newHeaders criteria");
+      }
+    }
+
+    return '';
+  }
 
   @override
   String toString() {
@@ -30,9 +62,11 @@ class FetchCriteria {
 
 class Header {
   /// Number in the group -- if any -- else 0
-  int number;
+  final int number;
+  /// Has been read?
+  final bool isRead;
   /// Full lines of header (with name prefix).
-  List<String> full;
+  final List<String> full;
 
   // Getters on full lines
 
@@ -45,6 +79,7 @@ class Header {
   int get lines => getInt('lines');
   String get xref => getString('xref');
 
+  Header(this.number, this.full, [this.isRead  = false]);
 
   String getString(String name) {
     final checkName = name.toLowerCase() + ':';
@@ -64,13 +99,22 @@ class Header {
     return s.isEmpty ? 0 : int.parse(s);
   }
 
-  Header(this.number, this.full);
-
-
+  @override
+  String toString() {
+    return 'Header{number: $number, isRead: $isRead, full: $full}';
+  }
 }
 
 class ThreadedHeader extends Header {
-  List<ThreadedHeader>? refs;
+  List<ThreadedHeader> refs;
 
   ThreadedHeader(int number, List<String> full, this.refs):super(number, full);
+
+  ThreadedHeader.from(Header h, [this.refs=const []]): super(h.number, h.full, h.isRead) {
+  }
+
+  @override
+  String toString() {
+    return 'ThreadedHeader{Subject: $subject refs: $refs}';
+  }
 }

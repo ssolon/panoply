@@ -41,7 +41,6 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
             if (state is HeadersBlocLoadedState) {
               loadedGroup = group;
               return ListView(
-                  key: Key(group),
                   children: state.headers
                       .map((i) => _buildHeaderListItem(context, i))
                       .toList()
@@ -68,9 +67,9 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
     );
   }
 
-  Widget _buildHeaderListItem(context, overviewItem) {
+  Widget _buildHeaderListItem(context, header) {
     return ListTile (
-      title: Text(overviewItem.subject),
+      title: Text(header.subject),
     );
   }
 }

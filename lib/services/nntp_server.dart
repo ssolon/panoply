@@ -251,7 +251,7 @@ class NntpServer with UiLoggy{
           _handleError("Stream error", error);
         });
 
-        _stream.listen((event) { loggy.debug("Data: [$event]");},
+        _stream.listen((event) { /*loggy.debug("Data: [$event]");*/},
             onError: (error) => _handleError('listen on stream error', error),
             onDone: () {
               loggy.debug("name=$name hostName=$hostName portNumber=$portNumber is done!");

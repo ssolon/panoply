@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
@@ -60,6 +61,12 @@ class NewsServiceHeaderFetchedState extends NewsServiceState {
   NewsServiceHeaderFetchedState(this.header);
 }
 
+@immutable
+class NewsServiceHeadersFetchDoneState extends NewsServiceState {
+  final int headerCount;
+
+  NewsServiceHeadersFetchDoneState(this.headerCount);
+}
 class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
 
   NntpServer? primaryServer;
@@ -89,25 +96,58 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
   /// one by one for further processing.
   Stream<NewsServiceState> fetchHeadersForGroup(HeadersForGroupRequested request) async* {
     var count = 0;
+    final criteria = request.criteria;
 
      // Update our status
-     _updateStatus(request.criteria.toString());
+     _updateStatus("Fetching ${request.criteria.toString()}");
 
-    //!!!! Testing just return some canned headers
+     // Get article numbers for group, this also selects the group
 
-    for (var element in testHeaders)  {
-      log.debug("Test header=$element");
-      count++;
-      yield NewsServiceHeaderFetchedState(element);
-     }
+    final listNumbers = "LISTGROUP ${request.groupName} ${criteria.articleRange}";
+    var groupResponse = await primaryServer!.executeMultilineRequest(listNumbers);
+
+    if (groupResponse.isOK) {
+      final articleNumbers = criteria.iterableFor(groupResponse.headers);
+      for (var articleNumber in articleNumbers) {
+        final n = int.parse(articleNumber);
+
+        final request = "HEAD $n";
+        final headerResponse = await primaryServer!.executeMultilineRequest(request);
+        _checkResponse(request, primaryServer!, headerResponse);
+
+        final header = Header(n, headerResponse.headers);
+        // TODO Date check
+        count++;
+        _updateStatus("Fetched ${count} headers");
+        yield NewsServiceHeaderFetchedState(header);
+      }
+    }
+    else {
+      _checkResponse("fetch '$listNumbers'", primaryServer!, groupResponse);
+    }
 
     // Update status to done
 
-    _updateStatus("$count headers loaded for ${request.groupName}");
+    _updateStatus("$count headers fetched for ${request.groupName}");
+    yield NewsServiceHeadersFetchDoneState(count);
   }
 
   void _updateStatus(String status) {
      _statusBloc.add(StatusBlocUpdatedStatusEvent('NewsService', status));
+  }
+
+  /// Handle a response from the server in an appropriate way returning true
+  /// if everything is ok and throwing if not.
+  bool _checkResponse(String description, NntpServer server, Response response) {
+    if (response.isOK) {
+      return true;
+    }
+
+    // For now just throw an general exception
+
+    final message = "NewsService: $description failure from server=${server.name}"
+        " statusCode=${response.statusCode} description=${response.statusLine}";
+    throw Exception(message);
   }
 }
 

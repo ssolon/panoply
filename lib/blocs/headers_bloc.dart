@@ -1,5 +1,6 @@
 
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
 import 'package:panoply/models/header.dart';
@@ -20,6 +21,12 @@ class HeadersForGroupFetchEvent extends HeadersBlocEvent {
   HeadersForGroupFetchEvent(this.criteria);
 }
 
+/// [header] was fetched from the nntp server.
+class HeadersBlocHeaderFetchedEvent extends HeadersBlocEvent {
+  final Header header;
+  HeadersBlocHeaderFetchedEvent(this.header);
+} 
+
 abstract class HeadersBlocState {}
 
 class HeadersBlocInitialState extends HeadersBlocState {}
@@ -29,6 +36,7 @@ class HeadersBlocLoadingState extends HeadersBlocState {
   HeadersBlocLoadingState(this.groupName);
 }
 
+/// We have a list of headers to be displayed.
 class HeadersBlocLoadedState extends HeadersBlocState {
   final String groupName;
   //!!! final List<ThreadedHeader> headers;
@@ -42,6 +50,9 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
   String groupName = '';
   final log = Loggy("HeadersBloc");
 
+  /// We build a list of headers here for the current [groupName].
+  List<ThreadedHeader> _loadedHeaders = [];
+
   HeadersBloc(this._newsService): super(HeadersBlocInitialState()) {}
 
   @override
@@ -49,10 +60,15 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
     if (event is HeadersBlocLoadEvent) {
       groupName = event.groupName;
       yield HeadersBlocLoadingState(groupName);
-      yield HeadersBlocLoadedState(groupName, headersFor(groupName));
+      //TODO Load headers from persistent store into [_loadedHeaders]
+      _loadedHeaders = []; //TODO persist
+      yield HeadersBlocLoadedState(groupName, _loadedHeaders);
     }
     else if (event is HeadersForGroupFetchEvent) {
-      yield* _loadHeaders(event.criteria);
+      yield* _fetchHeaders(event.criteria);
+    }
+    else if (event is HeadersBlocHeaderFetchedEvent) {
+      yield* _addFetchedHeader(event.header);
     }
     else {
       throw UnimplementedError("Event = $event");
@@ -60,38 +76,35 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
   }
 
   /// Load headers meeting [criteria] from server using service.
-  Stream<HeadersBlocLoadedState> _loadHeaders(FetchCriteria criteria) async* {
-    List <Header> result = [];
+  Stream<HeadersBlocLoadingState> _fetchHeaders(FetchCriteria criteria) async* {
 
     log.debug("_loadHeaders criteria=$criteria");
-
-    _newsService
+    final bloc = this;
+    
+    final headerSubscription = _newsService
         .fetchHeadersForGroup(HeadersForGroupRequested(groupName, criteria))
         .listen((state) {
       // TODO yield the finished, merged, collection on done
+      // TODO or piece by piece?
       //!!!! For now just return them as is.
       log.debug("Listen state=$state");
       if (state is NewsServiceHeaderFetchedState) {
-        result.add(state.header);
+        bloc.add(HeadersBlocHeaderFetchedEvent(state.header));
       }
     });
 
-    yield HeadersBlocLoadedState(groupName, result);
-
-  }
-  /// Return a list of overviews for [groupName].
-  /// TODO Stream this information to use with an on demand list view?
-  List<ThreadedHeader> headersFor(String groupName) {
-
-    return [];
-    //   ThreadedHeader(1, '$groupName-1', 'from1', 'date1', 'msgId1', 'references1', 10, 1, 'xref1', []),
-    //   ThreadedHeader(2, '$groupName-2', 'from2', 'date2', 'msgId2', 'references2', 20, 2, 'xref2', []),
-    //   ThreadedHeader(3, '$groupName-3', 'from3', 'date3', 'msgId3', 'references3', 30, 3, 'xref3', []),
-    //   ThreadedHeader(4, '$groupName-4', 'from4', 'date4', 'msgId4', 'references4', 40, 4, 'xref4', []),
-    //   ThreadedHeader(5, '$groupName-5', 'from5', 'date5', 'msgId5', 'references5', 50, 5, 'xref5', []),
-    // ];
+    yield HeadersBlocLoadingState(groupName);
   }
 
+  /// We received a header from server, add to the collection and display?
+  Stream<HeadersBlocState> _addFetchedHeader(Header header) async* {
+    //!!!! For now just convert to threaded header and append to the list
+    final threaded = ThreadedHeader.from(header);
+    // TODO Build threading
+    _loadedHeaders.add(threaded);
+    log.debug("Loaded headers $_loadedHeaders");
+    yield HeadersBlocLoadedState(groupName, _loadedHeaders);
+  }
 
 }
 
