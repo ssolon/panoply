@@ -138,11 +138,13 @@ bool OK(Response? response) => response?.isOK ?? false;
 /// Errors are handled by throwing exceptions which can happen at any time since
 /// the server may close the connection when it chooses (usually will timeout).
 ///
-class NntpServer with UiLoggy{
+class NntpServer {
   String name;
   String hostName;
   AuthInfo? authInfo;
   int    portNumber;
+
+  final log = Loggy('NntpServer');
 
   final Capabilities capabilities = Capabilities();
 
@@ -189,7 +191,7 @@ class NntpServer with UiLoggy{
     if (!isConnectionOpen
         || __realSocket == null
         || __realStream == null) {
-      loggy.debug("Autoconnect name=$name hostName=$hostName portNumber=$portNumber");
+      log.debug("Autoconnect name=$name hostName=$hostName portNumber=$portNumber");
       await connect();
     }
   }
@@ -208,7 +210,7 @@ class NntpServer with UiLoggy{
   /// Open a connection the the server at [name]/[portNumber] and return the
   /// response.
   Future<Response> connect() async {
-    loggy.debug("Start connect to server hostName=$hostName");
+    log.debug("Start connect to server hostName=$hostName");
 
     switch (_connectionState) {
       case ConnectionState.open:
@@ -221,7 +223,7 @@ class NntpServer with UiLoggy{
         // Must use __real* values here to avoid triggering _autoConnect.
         //
 
-        loggy.debug("About to connect to hostName=$hostName on portNumber=$portNumber");
+        log.debug("About to connect to hostName=$hostName on portNumber=$portNumber");
 
         try {
           __realSocket = await Socket.connect(hostName, portNumber, timeout: connectTimeout);
@@ -233,7 +235,7 @@ class NntpServer with UiLoggy{
         }
 
         _connectionState = ConnectionState.open;
-        loggy.debug("Socket opened");
+        log.debug("Socket opened");
 
         __realStream = __realSocket!.encoding.decoder
             .bind(__realSocket!)  // Don't use getter or _autoConnect will be invoked
@@ -251,16 +253,16 @@ class NntpServer with UiLoggy{
           _handleError("Stream error", error);
         });
 
-        _stream.listen((event) { /*loggy.debug("Data: [$event]");*/},
+        _stream.listen((event) { /*log.debug("Data: [$event]");*/},
             onError: (error) => _handleError('listen on stream error', error),
             onDone: () {
-              loggy.debug("name=$name hostName=$hostName portNumber=$portNumber is done!");
+              log.debug("name=$name hostName=$hostName portNumber=$portNumber is done!");
               _connectionState = ConnectionState.closed;
               _socket.destroy();
             });
     }
 
-    loggy.debug("ConnectToServer for name=$name done.");
+    log.debug("ConnectToServer for name=$name done.");
     _connectResponse = await handleSingleLineResponse(_stream);
 
     if (OK(_connectResponse)) {
@@ -281,13 +283,13 @@ class NntpServer with UiLoggy{
   Future<void> authenticate() async {
     if (authInfo != null) {  // authentication needed
       var ai = authInfo!;
-      loggy.debug("Do authenticate");
+      log.debug("Do authenticate");
       var user_response = await executeSingleLineRequest("authinfo user ${ai.userName}");
       if (OK(user_response)) {
-        loggy.debug("OK username -- send password");
+        log.debug("OK username -- send password");
         var pass_response = await executeSingleLineRequest("authinfo pass ${ai.passWord}");
         if (OK(pass_response)) {
-          loggy.debug("OK password");
+          log.debug("OK password");
           return;
         }
         else {
@@ -304,7 +306,7 @@ class NntpServer with UiLoggy{
 
   void _sendRequest(String? request) {
     if (request != null) {
-      loggy.debug("Sending request='$request' for $name");
+      log.debug("Sending request='$request' for $name");
       _socket.add(encodeForServer(request));
     }
   }
@@ -325,7 +327,7 @@ class NntpServer with UiLoggy{
 
   /// Update [c] from [lines].
   void handleCapabilities(Capabilities c, List<String> lines) {
-    loggy.debug("Capabilities for name=$name $lines");
+    log.debug("Capabilities for name=$name $lines");
     lines.forEach( (l) => capabilities.add(l));
   }
 
