@@ -27,6 +27,9 @@ class HeadersBlocHeaderFetchedEvent extends HeadersBlocEvent {
   HeadersBlocHeaderFetchedEvent(this.header);
 }
 
+/// Finished fetching headers from NewsService
+class HeadersBlocHeaderFetchDoneEvent extends HeadersBlocEvent {}
+
 abstract class HeadersBlocState {}
 
 class HeadersBlocInitialState extends HeadersBlocState {}
@@ -70,6 +73,8 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       yield* _fetchHeaders(event.criteria);
     } else if (event is HeadersBlocHeaderFetchedEvent) {
       yield* _addFetchedHeader(event.header);
+    } else if (event is HeadersBlocHeaderFetchDoneEvent) {
+      yield* _handleFetchedHeaders();
     } else {
       throw UnimplementedError("Event = $event");
     }
@@ -89,6 +94,8 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       log.debug("Listen state=$state");
       if (state is NewsServiceHeaderFetchedState) {
         bloc.add(HeadersBlocHeaderFetchedEvent(state.header));
+      } else if (state is NewsServiceHeadersFetchDoneState) {
+        bloc.add(HeadersBlocHeaderFetchDoneEvent());
       }
     });
 
@@ -97,11 +104,21 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
 
   /// We received a header from server, add to the collection and display?
   Stream<HeadersBlocState> _addFetchedHeader(Header header) async* {
-    //!!!! For now just convert to threaded header and append to the list
-    final threaded = ThreadedHeader.from(header);
-    // TODO Build threading
-    _loadedHeaders.add(threaded);
-    log.debug("Loaded headers $_loadedHeaders");
+    _fetchedHeaders.add(header);
+  }
+
+  /// Deal with fetched headers
+  Stream<HeadersBlocState> _handleFetchedHeaders() async* {
+
+    //!!!! For now just convert to threaded header and replace loaded
+    // TODO Merge fetched headers
+    // TODO Threading
+    // TODO Cleanup expired headers using low article number from (LIST)GROUP
+
+    _loadedHeaders =
+        _fetchedHeaders.map((h) => ThreadedHeader.from(h)).toList();
+    _fetchedHeaders = [];
+
     yield HeadersBlocLoadedState(groupName, _loadedHeaders);
   }
 }
