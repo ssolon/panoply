@@ -164,9 +164,9 @@ class NntpServer {
   String _exceptionMessage(detail) => "$detail: name=$name hostName=$hostName portNumber=$portNumber";
 
   /// Return socket for host access. Throws exception if connection closed.
-  Socket get _socket {
+  Future<Socket> get _socket async {
+    await _autoConnect();
     if (__realSocket != null) {
-      _autoConnect();
       return __realSocket!;
     }
 
@@ -174,8 +174,8 @@ class NntpServer {
   }
 
   /// Return stream for host. Throws exception if stream inaccessible (connection closed?).
-  Stream<String> get _stream {
-    _autoConnect();
+  Future<Stream<String>> get _stream async {
+    await _autoConnect();
     if (__realStream != null) {
       return __realStream!;
     }
@@ -187,7 +187,7 @@ class NntpServer {
   NntpServer(this.name, this.hostName, [this.portNumber = 119]);
 
   /// Try to connect to server if we're not open.
-  void _autoConnect() async {
+  Future<void> _autoConnect() async {
     if (!isConnectionOpen
         || __realSocket == null
         || __realStream == null) {
@@ -205,7 +205,7 @@ class NntpServer {
   bool get isConnectionOpen => _connectionState == ConnectionState.open;
 
   /// Converts to server coding and adds CRLF.
-  List<int> encodeForServer(String s) => _socket.encoding.encoder.convert(s + '\r\n');
+  Future<List<int>> encodeForServer(String s) async => (await _socket).encoding.encoder.convert(s + '\r\n');
 
   /// Open a connection the the server at [name]/[portNumber] and return the
   /// response.
@@ -249,21 +249,21 @@ class NntpServer {
         //
 
         // Is this useful or are errors thrown?
-        var _errorHandlerStream = _socket.handleError((error) {
+        var _errorHandlerStream = (await _socket).handleError((error) {
           _handleError("Stream error", error);
         });
 
-        _stream.listen((event) { /*log.debug("Data: [$event]");*/},
+        (await _stream).listen((event) { /*log.debug("Data: [$event]");*/},
             onError: (error) => _handleError('listen on stream error', error),
             onDone: () {
               log.debug("name=$name hostName=$hostName portNumber=$portNumber is done!");
               _connectionState = ConnectionState.closed;
-              _socket.destroy();
+              __realSocket?.destroy();
             });
     }
 
     log.debug("ConnectToServer for name=$name done.");
-    _connectResponse = await handleSingleLineResponse(_stream);
+    _connectResponse = await handleSingleLineResponse(await _stream);
 
     if (OK(_connectResponse)) {
       await authenticate();
@@ -304,20 +304,20 @@ class NntpServer {
     return Future<void>.value();
   }
 
-  void _sendRequest(String? request) {
+  void _sendRequest(String? request) async {
     if (request != null) {
       log.debug("Sending request='$request' for $name");
-      _socket.add(encodeForServer(request));
+      (await _socket).add(await encodeForServer(request));
     }
   }
   /// Execute a multiline request.
   Future<Response> executeMultilineRequest(String request) async {
-    return handleMultiLineResponse(_stream, request);
+    return handleMultiLineResponse(await _stream, request);
   }
 
   /// Execute a single line request.
   Future<Response> executeSingleLineRequest(String request) async {
-    return handleSingleLineResponse(_stream, request);
+    return handleSingleLineResponse(await _stream, request);
   }
 
   /// Get, and parse, the current capabilities.
@@ -434,7 +434,7 @@ class NntpServer {
   Future<void> close() async {
     if (!isClosed) {
       _connectionState = ConnectionState.closed;
-      return _socket.destroy();
+      return __realSocket?.destroy();
     }
   }
 }
