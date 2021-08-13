@@ -88,11 +88,12 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
     final headerSubscription = _newsService
         .fetchHeadersForGroup(HeadersForGroupRequested(groupName, criteria))
         .listen((state) {
-      // TODO yield the finished, merged, collection on done
-      // TODO or piece by piece?
-      //!!!! For now just return them as is.
-      log.debug("Listen state=$state");
-      if (state is NewsServiceHeaderFetchedState) {
+      if (state is NewsServiceGroupStatsState) {
+        log.debug("Stats for group=${state.groupName}"
+                  " estimatedCount=${state.estimatedCount}"
+                  " low=${state.lowWaterMark}"
+                  " high=${state.highWaterMark}");
+      } else if (state is NewsServiceHeaderFetchedState) {
         bloc.add(HeadersBlocHeaderFetchedEvent(state.header));
       } else if (state is NewsServiceHeadersFetchDoneState) {
         bloc.add(HeadersBlocHeaderFetchDoneEvent());

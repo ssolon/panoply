@@ -56,6 +56,22 @@ class NewsServiceStatusUpdateState extends NewsServiceState {
 }
 
 @immutable
+/// Statistics for [groupName] from (LIST)GROUP request to server
+class NewsServiceGroupStatsState extends NewsServiceState {
+  final String groupName;
+  final int estimatedCount;
+  final int lowWaterMark;
+  final int highWaterMark;
+
+  NewsServiceGroupStatsState(
+      this.groupName,
+      this.estimatedCount,
+      this.lowWaterMark,
+      this.highWaterMark
+      );
+}
+
+@immutable
 class NewsServiceHeaderFetchedState extends NewsServiceState {
   final Header header;
   NewsServiceHeaderFetchedState(this.header);
@@ -107,6 +123,8 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
     var groupResponse = await primaryServer!.executeMultilineRequest(listNumbers);
 
     if (groupResponse.isOK) {
+      yield* _reportGroupStats(groupResponse);
+
       final articleNumbers = criteria.iterableFor(groupResponse.headers);
       for (var articleNumber in articleNumbers) {
         final n = int.parse(articleNumber);
@@ -132,6 +150,16 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
     yield NewsServiceHeadersFetchDoneState(count);
   }
 
+  Stream<NewsServiceState> _reportGroupStats(Response response) async* {
+     final items = response.statusLine.split(' ');
+     assert(items.length > 3, "group status line items length=${items.length}");
+     final count = int.parse(items[0]);
+     final low = int.parse(items[1]);
+     final high = int.parse(items[2]);
+     final group = items[3];
+
+     yield NewsServiceGroupStatsState(group, count, low, high);
+  }
   void _updateStatus(String status) {
      _statusBloc.add(StatusBlocUpdatedStatusEvent('NewsService', status));
   }
