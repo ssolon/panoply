@@ -102,13 +102,13 @@ void main() {
       final stream = Stream.fromIterable(responseLines).transform(LineSplitter());
 
       // stream.takeWhile((l) => l.trimRight() != ".").forEach(print);
-      final response = await server.handleMultiLineResponse(stream);
+      final response = await server.handleMultiLineResponse(stream, null);
 
       expect(response.statusCode, '101');
       expect(response.statusLine, 'Capability list:');
       expect(response.isOK, true);
 
-      expect(response.headers.length, responseLines.length-2);  // Terminating dot line and status removed
+      expect(response.body.length, responseLines.length-2);  // Terminating dot line and status removed
     });
 
     test('Header map response', () async {
@@ -133,7 +133,7 @@ void main() {
       ];
 
       final stream = Stream.fromIterable(responseLines).transform(LineSplitter());
-      final response = await server.handleMultiLineResponse(stream, null, true);
+      final response = await server.handleMultiLineResponse(stream, null, hasHeaders:true, mappedHeader: true);
 
       expect(response.statusCode, '220');
       expect(response.isOK, true);

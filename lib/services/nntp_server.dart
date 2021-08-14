@@ -324,8 +324,14 @@ class NntpServer {
     }
   }
 
-  /// Execute a multiline request.
+
+  /// Execute a multiline request
   Future<Response> executeMultilineRequest(String request) async {
+    return handleMultiLineResponse(await _stream, request);
+  }
+
+  /// Execute a multiline request that has headers and a body.
+  Future<Response> executeMultilineWithHeadersRequest(String request) async {
     return handleMultiLineResponse(await _stream, request);
   }
 
@@ -337,7 +343,7 @@ class NntpServer {
   /// Get, and parse, the current capabilities.
   Future<void> executeUpdateCapabilities() async {
     handleCapabilities(
-        capabilities, (await executeMultilineRequest('capabilities')).headers);
+        capabilities, (await executeMultilineWithHeadersRequest('capabilities')).headers);
   }
 
   /// Update [c] from [lines].
@@ -414,13 +420,14 @@ class NntpServer {
   ///
   /// The status line will be parsed into [statusCode] and [statusLine] and
   /// additional header lines will be available as [headers] with the body
-  /// as [body].
+  /// as [body] if [hasHeaders] is true, otherwise all lines will be placed
+  /// into [body].
   ///
   /// If the header contains 'key: value' specifications setting [mappedHeader]
   /// will parse them and make them available as [header(key)].
   ///
   Future<Response> handleMultiLineResponse(Stream<String> stream,
-      [String? request, mappedHeader = false]) async {
+      String? request, {hasHeaders = false, mappedHeader = false}) async {
     List<String> header = [];
     List<String> body = [];
     var inHeader = true;
@@ -437,6 +444,7 @@ class NntpServer {
           inHeader = false;
         } else {
           header.add(line);
+          inHeader = hasHeaders;  // Reset after first (status) if no headers
         }
       } else {
         body.add(line);

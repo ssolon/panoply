@@ -125,7 +125,7 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
     if (groupResponse.isOK) {
       yield* _reportGroupStats(groupResponse);
 
-      final articleNumbers = criteria.iterableFor(groupResponse.headers);
+      final articleNumbers = criteria.iterableFor(groupResponse.body);
       for (var articleNumber in articleNumbers) {
         final n = int.parse(articleNumber);
 
@@ -133,7 +133,7 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
         final headerResponse = await primaryServer!.executeMultilineRequest(request);
         _checkResponse(request, primaryServer!, headerResponse);
 
-        final header = Header(n, headerResponse.headers);
+        final header = Header(n, headerResponse.body);
         // TODO Date check
         count++;
         _updateStatus("Fetched ${count} headers");
