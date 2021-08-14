@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
+import 'package:panoply/blocs/article_bloc.dart';
 import 'package:panoply/blocs/headers_bloc.dart';
 import 'package:panoply/models/header.dart';
 import 'package:panoply/services/news_service.dart';
@@ -8,6 +9,7 @@ import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
 
 import '../main.dart';
+import 'article.dart';
 
 class HeaderList extends StatefulWidget {
   const HeaderList({Key? key, required this.group}) : super(key: key);
@@ -68,8 +70,16 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
   }
 
   Widget _buildHeaderListItem(context, header) {
-    return ListTile (
+    return ListTile(
       title: Text(header.subject),
+      onTap: () {
+        Provider.of<ArticleBloc>(context, listen:false).add(ArticleBlocFetchBodyEvent(header));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => Article(header))
+        );
+      }
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:panoply/views/headers.dart';
 import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
 
+import 'blocs/article_bloc.dart';
 import 'blocs/headers_bloc.dart';
 import 'blocs/status_bloc.dart';
 
@@ -29,6 +30,9 @@ void main() {
             BlocProvider<HeadersBloc>(
                 create: (context) => HeadersBloc(BlocProvider.of<NewsService>(context)),
             ),
+            BlocProvider<ArticleBloc>(
+                create: (context) => ArticleBloc(BlocProvider.of<NewsService>(context)),
+            )
           ],
           child: const MyApp()),
   );
