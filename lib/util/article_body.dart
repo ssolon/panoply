@@ -7,7 +7,7 @@ abstract class BodyNode {
 /// Body of text which holds a list of [BodyNode] in [nodes] and knows
 /// how to build itself from an iterable of prefixed (with prefix '>')
 /// String from [lines].
-class Body {
+class ArticleBody {
   /// The prefix for all the nodes in this body
   final String prefix;
 
@@ -26,7 +26,7 @@ class Body {
 
   /// Create a body of text prefixed by [prefix]. Top level should usually
   /// have a prefix of ''.
-  Body(this.prefix);
+  ArticleBody(this.prefix);
 
   String? build(Iterator<String> lines,[String? reprocessLine]) {
     var currentLine = reprocessLine;
@@ -56,7 +56,7 @@ class Body {
         addLine(prefixMatch?.group(2) ?? '');
         currentLine = null;
       } else { // deeper down - new body
-        final sub = BodyNested(Body(currentPrefix)
+        final sub = ArticleBodyNested(ArticleBody(currentPrefix)
           ..fillParagraphs = fillParagraphs
           ..leadingSpaceAsIs = leadingSpaceAsIs);
         nodes.add(sub);
@@ -70,14 +70,14 @@ class Body {
   ///
   void addLine(String line) {
     if (!fillParagraphs) {
-      nodes.add(BodyTextLine(line));
+      nodes.add(ArticleBodyTextLine(line));
       return; // no further processing needed
     }
 
     final bool hasLeadingWhitespace = line.startsWith(' ')||line.startsWith('\t');
     final bool lineIsEmpty = line.trim().isEmpty;
     final bool noNodes = nodes.isEmpty;
-    final bool currentNodeIsBody = noNodes ? false : nodes.last is BodyNested;
+    final bool currentNodeIsBody = noNodes ? false : nodes.last is ArticleBodyNested;
 
     final bool needNewLine = noNodes || currentNodeIsBody;
     final bool asIsLine = (hasLeadingWhitespace && leadingSpaceAsIs);
@@ -85,13 +85,13 @@ class Body {
     final bool breakLine = asIsLine || lineIsEmpty;
 
     if (needNewLine || breakLine) {
-      nodes.add(BodyTextLine(line));
+      nodes.add(ArticleBodyTextLine(line));
 
       // if (asIsLine) {
       //   nodes.add(BodyTextLine('')); // should be it's own line
       // }
     } else { // fill current line
-      (nodes.last as BodyTextLine).add(line);
+      (nodes.last as ArticleBodyTextLine).add(line);
     }
   }
 
@@ -105,10 +105,10 @@ class Body {
 
 /// Node holding a single chunk of text. Will be a paragraph if
 /// [fillParagraphs] is true.
-class BodyTextLine extends BodyNode {
+class ArticleBodyTextLine extends BodyNode {
   String line;
 
-  BodyTextLine(this.line);
+  ArticleBodyTextLine(this.line);
 
   String add(String l) => line += line.isEmpty ? l : (' ' + l);
 
@@ -116,10 +116,10 @@ class BodyTextLine extends BodyNode {
 }
 
 /// Body nested in another body. Always causes a break.
-class BodyNested extends BodyNode {
-  final Body body;
+class ArticleBodyNested extends BodyNode {
+  final ArticleBody body;
 
   List<String> get text => body.text;
 
-  BodyNested(this.body);
+  ArticleBodyNested(this.body);
 }

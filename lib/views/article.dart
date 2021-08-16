@@ -1,8 +1,11 @@
 
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:panoply/blocs/article_bloc.dart';
 import 'package:panoply/models/header.dart';
+import 'package:panoply/util/article_body.dart';
 
 class Article extends StatelessWidget {
   final Header header;
@@ -19,6 +22,7 @@ class Article extends StatelessWidget {
           builder: (context, state) {
             if (state is ArticleBlocFetchedState) {
               return ListView(
+                  padding: const EdgeInsets.all(10.0), //TODO Konstant or setting
                   children: [
                     _buildHeader(state.header),
                     Divider(),
@@ -37,21 +41,54 @@ class Article extends StatelessWidget {
   }
 
   Widget _buildHeader(header) {
-    return Container(
-        child:Text(header.subject),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children:[
+        Text(header.subject),
+        Text(header.number.toString()),
+      ],
     );
   }
 
-  Widget _buildBody(body) {
+  Widget _buildBody(bodyLines) {
+    final body = ArticleBody('')..fillParagraphs=true;
+    body.build(bodyLines.iterator);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: _makeBody(body).toList(),
     );
   }
 
-  Iterable<Widget> _makeBody(List<String> body) sync* {
-    for (final p in buildParagraphs(body)) {
-      yield Text(p);
+  Iterable<Widget> _makeBody(body) sync* {
+    for (final p in body.nodes) {
+      if (p is ArticleBodyTextLine) {
+        if (p.line.isEmpty) continue; // Swallow blank lines
+
+        yield Container(
+            margin: EdgeInsets.only(left: 4.0), //TODO Konstant or setting
+            child: Column (
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.line + '\n'),
+                ]
+            )
+        );
+      }
+      else if (p is ArticleBodyNested) { // Nested body
+        yield Container(
+            margin: EdgeInsets.only(left: 3.0), //TODO Konstant or setting
+            decoration: const BoxDecoration(
+                border: Border(
+                    left: BorderSide(width: 2.0, color: Color(0x88888888))
+                )
+            ),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _makeBody(p.body).toList()
+            )
+        );
+      }
     }
   }
 
@@ -81,8 +118,10 @@ class Article extends StatelessWidget {
     // Last fragment
     if (paragraph.isNotEmpty) {
       yield paragraph;
+    }
   }
 
+  final quotedRE = RegExp(r'^(>+).*$');
 
-  }
+
 }

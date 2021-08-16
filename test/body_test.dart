@@ -1,4 +1,4 @@
-import 'package:panoply/util/body.dart';
+import 'package:panoply/util/article_body.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -8,7 +8,7 @@ void main() {
     group('Simple non-nested', () {
       test('Empty body', () {
         final l0 = List<String>.empty();
-        final b0 = Body('')..fillParagraphs = false;
+        final b0 = ArticleBody('')..fillParagraphs = false;
         b0.build(l0.iterator);
 
         expect(b0.nodes.length, 0);
@@ -16,7 +16,7 @@ void main() {
 
       test('One line', () {
         final l1 = ['Line1'];
-        final b1 = Body('')..fillParagraphs = false;
+        final b1 = ArticleBody('')..fillParagraphs = false;
         b1.build(l1.iterator);
 
         expect(b1.nodes.length, 1);
@@ -24,7 +24,7 @@ void main() {
 
       test('Two lines', () {
         final l2 = ['Line1', 'Line2'];
-        final b2 = Body('')..fillParagraphs = false;
+        final b2 = ArticleBody('')..fillParagraphs = false;
         b2.build(l2.iterator);
 
         expect(b2.nodes.length, 2);
@@ -34,7 +34,7 @@ void main() {
 
       test('Three lines', () {
         final l3 = ['Line1', 'Line2', 'Line3'];
-        final b3 = Body('')..fillParagraphs = false;
+        final b3 = ArticleBody('')..fillParagraphs = false;
         b3.build(l3.iterator);
 
         expect(b3.nodes.length, 3);
@@ -47,7 +47,7 @@ void main() {
     group('Nested', () {
       test('One nested 0', () {
         final l = ['Line1', '>nested line1'];
-        final b = Body('')..fillParagraphs = false;
+        final b = ArticleBody('')..fillParagraphs = false;
         b.build(l.iterator);
 
         expect(b.nodes.length, 2);
@@ -57,7 +57,7 @@ void main() {
 
       test('One nested 1', () {
         final l = ['Line1', '>nested line1', 'Line2'];
-        final b = Body('')..fillParagraphs = false;
+        final b = ArticleBody('')..fillParagraphs = false;
         b.build(l.iterator);
 
         expect(b.nodes.length, 3);
@@ -68,7 +68,7 @@ void main() {
 
       test('Two nested 1', () {
         final l = ['Line1', '>nested line1a', '>nested line1b', 'Line2'];
-        final b = Body('')..fillParagraphs = false;
+        final b = ArticleBody('')..fillParagraphs = false;
         b.build(l.iterator);
 
         expect(b.nodes.length, 3);
@@ -85,7 +85,7 @@ void main() {
           '>nested line1c',
           'Line2'
         ];
-        final b = Body('')..fillParagraphs = false;
+        final b = ArticleBody('')..fillParagraphs = false;
         b.build(l.iterator);
 
         expect(b.nodes.length, 3);
@@ -99,7 +99,7 @@ void main() {
         final l = ['Line1',
           '>nested line1a', '>nested line1b', '>nested line1c',
           'Line2', '>nested 2a'];
-        final b = Body('')..fillParagraphs = false;
+        final b = ArticleBody('')..fillParagraphs = false;
         b.build(l.iterator);
 
         expect(b.nodes.length, 4);
@@ -125,46 +125,46 @@ void main() {
           '>nested 2b',
           'Line 3'
         ];
-        final b = Body('')..fillParagraphs = false;
+        final b = ArticleBody('')..fillParagraphs = false;
         b.build(l.iterator);
 
         expect(b.nodes.length, 5);
-        expect(b.nodes[0].runtimeType, BodyTextLine);
+        expect(b.nodes[0].runtimeType, ArticleBodyTextLine);
 
-        expect(b.nodes[1].runtimeType, BodyNested);
-        final bodysub1 = (b.nodes[1] as BodyNested).body;
+        expect(b.nodes[1].runtimeType, ArticleBodyNested);
+        final bodysub1 = (b.nodes[1] as ArticleBodyNested).body;
         expect(bodysub1.nodes.length, 3);
-        expect(bodysub1.nodes[0].runtimeType, BodyTextLine);
+        expect(bodysub1.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(bodysub1.nodes[0].text, ['nested line1a']);
         expect(bodysub1.nodes[1].text, ['nested line1b']);
         expect(bodysub1.nodes[2].text, ['nested line1c']);
 
-        expect(b.nodes[2].runtimeType, BodyTextLine);
+        expect(b.nodes[2].runtimeType, ArticleBodyTextLine);
 
-        expect(b.nodes[3].runtimeType, BodyNested);
-        final bodysub2 = (b.nodes[3] as BodyNested).body;
+        expect(b.nodes[3].runtimeType, ArticleBodyNested);
+        final bodysub2 = (b.nodes[3] as ArticleBodyNested).body;
         expect(bodysub2.nodes.length, 3);
-        expect(bodysub2.nodes[0].runtimeType, BodyTextLine);
+        expect(bodysub2.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(bodysub2.nodes[0].text, ['nested 2a']);
-        expect(bodysub2.nodes[1].runtimeType, BodyNested);
+        expect(bodysub2.nodes[1].runtimeType, ArticleBodyNested);
         expect(bodysub2.nodes[2].text, ['nested 2b']);
 
-        final bodysub3 = (bodysub2.nodes[1] as BodyNested).body;
+        final bodysub3 = (bodysub2.nodes[1] as ArticleBodyNested).body;
         expect(bodysub3.nodes.length, 3);
-        expect(bodysub3.nodes[0].runtimeType, BodyTextLine);
+        expect(bodysub3.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(bodysub3.nodes[0].text, ['nested 2aa']);
-        expect(bodysub3.nodes[1].runtimeType, BodyNested);
-        expect(bodysub3.nodes[2].runtimeType, BodyTextLine);
+        expect(bodysub3.nodes[1].runtimeType, ArticleBodyNested);
+        expect(bodysub3.nodes[2].runtimeType, ArticleBodyTextLine);
         expect(bodysub3.nodes[2].text, ['nested 2ab']);
 
-        final bodysub4 = (bodysub3.nodes[1] as BodyNested).body;
+        final bodysub4 = (bodysub3.nodes[1] as ArticleBodyNested).body;
         expect(bodysub4.nodes.length, 2);
-        expect(bodysub4.nodes[0].runtimeType, BodyTextLine);
+        expect(bodysub4.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(bodysub4.nodes[0].text, ['nested 2aaa']);
-        expect(bodysub4.nodes[1].runtimeType, BodyTextLine);
+        expect(bodysub4.nodes[1].runtimeType, ArticleBodyTextLine);
         expect(bodysub4.nodes[1].text, ['nested 2aab']);
 
-        expect(b.nodes[4].runtimeType, BodyTextLine);
+        expect(b.nodes[4].runtimeType, ArticleBodyTextLine);
 
         expect(b.nodes[0].text, ['Line1']);
         expect(b.nodes[1].text,
@@ -179,7 +179,7 @@ void main() {
     group('Simple non-nested', () {
       test('Empty body', () {
         final l0 = List<String>.empty();
-        final b0 = Body('');
+        final b0 = ArticleBody('');
         b0.build(l0.iterator);
 
         expect(b0.nodes.length, 0);
@@ -187,7 +187,7 @@ void main() {
 
       test('One line', () {
         final l1 = ['Line1'];
-        final b1 = Body('');
+        final b1 = ArticleBody('');
         b1.build(l1.iterator);
 
         expect(b1.nodes.length, 1);
@@ -195,7 +195,7 @@ void main() {
 
       test('Two lines', () {
         final l2 = ['Line1', 'Line2'];
-        final b2 = Body('');
+        final b2 = ArticleBody('');
         b2.build(l2.iterator);
 
         expect(b2.nodes.length, 1);
@@ -204,7 +204,7 @@ void main() {
 
       test('Three lines', () {
         final l3 = ['Line1', 'Line2', 'Line3'];
-        final b3 = Body('');
+        final b3 = ArticleBody('');
         b3.build(l3.iterator);
 
         expect(b3.nodes.length, 1);
@@ -215,7 +215,7 @@ void main() {
     group('Nested', () {
       test('One nested 0', () {
         final l = ['Line1', '>nested line1'];
-        final b = Body('');
+        final b = ArticleBody('');
         b.build(l.iterator);
 
         expect(b.nodes.length, 2);
@@ -225,7 +225,7 @@ void main() {
 
       test('One nested 1', () {
         final l = ['Line1', '>nested line1', 'Line2'];
-        final b = Body('');
+        final b = ArticleBody('');
         b.build(l.iterator);
 
         expect(b.nodes.length, 3);
@@ -236,7 +236,7 @@ void main() {
 
       test('Two nested 1', () {
         final l = ['Line1', '>nested line1a', '>nested line1b', 'Line2'];
-        final b = Body('');
+        final b = ArticleBody('');
         b.build(l.iterator);
 
         expect(b.nodes.length, 3);
@@ -253,7 +253,7 @@ void main() {
           '>nested line1c',
           'Line2'
         ];
-        final b = Body('');
+        final b = ArticleBody('');
         b.build(l.iterator);
 
         expect(b.nodes.length, 3);
@@ -266,7 +266,7 @@ void main() {
         final l = ['Line1',
           '>nested line1a', '>nested line1b', '>nested line1c',
           'Line2', '>nested 2a'];
-        final b = Body('');
+        final b = ArticleBody('');
         b.build(l.iterator);
 
         expect(b.nodes.length, 4);
@@ -292,42 +292,42 @@ void main() {
           '>nested 2b',
           'Line 3'
         ];
-        final b = Body('');
+        final b = ArticleBody('');
         b.build(l.iterator);
 
         expect(b.nodes.length, 5);
-        expect(b.nodes[0].runtimeType, BodyTextLine);
+        expect(b.nodes[0].runtimeType, ArticleBodyTextLine);
 
-        expect(b.nodes[1].runtimeType, BodyNested);
-        final bodysub1 = (b.nodes[1] as BodyNested).body;
+        expect(b.nodes[1].runtimeType, ArticleBodyNested);
+        final bodysub1 = (b.nodes[1] as ArticleBodyNested).body;
         expect(bodysub1.nodes.length, 1);
-        expect(bodysub1.nodes[0].runtimeType, BodyTextLine);
+        expect(bodysub1.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(bodysub1.nodes[0].text, ['nested line1a nested line1b nested line1c']);
 
-        expect(b.nodes[2].runtimeType, BodyTextLine);
+        expect(b.nodes[2].runtimeType, ArticleBodyTextLine);
 
-        expect(b.nodes[3].runtimeType, BodyNested);
-        final bodysub2 = (b.nodes[3] as BodyNested).body;
+        expect(b.nodes[3].runtimeType, ArticleBodyNested);
+        final bodysub2 = (b.nodes[3] as ArticleBodyNested).body;
         expect(bodysub2.nodes.length, 3);
-        expect(bodysub2.nodes[0].runtimeType, BodyTextLine);
+        expect(bodysub2.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(bodysub2.nodes[0].text, ['nested 2a']);
-        expect(bodysub2.nodes[1].runtimeType, BodyNested);
+        expect(bodysub2.nodes[1].runtimeType, ArticleBodyNested);
         expect(bodysub2.nodes[2].text, ['nested 2b']);
 
-        final bodysub3 = (bodysub2.nodes[1] as BodyNested).body;
+        final bodysub3 = (bodysub2.nodes[1] as ArticleBodyNested).body;
         expect(bodysub3.nodes.length, 3);
-        expect(bodysub3.nodes[0].runtimeType, BodyTextLine);
+        expect(bodysub3.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(bodysub3.nodes[0].text, ['nested 2aa']);
-        expect(bodysub3.nodes[1].runtimeType, BodyNested);
-        expect(bodysub3.nodes[2].runtimeType, BodyTextLine);
+        expect(bodysub3.nodes[1].runtimeType, ArticleBodyNested);
+        expect(bodysub3.nodes[2].runtimeType, ArticleBodyTextLine);
         expect(bodysub3.nodes[2].text, ['nested 2ab']);
 
-        final bodysub4 = (bodysub3.nodes[1] as BodyNested).body;
+        final bodysub4 = (bodysub3.nodes[1] as ArticleBodyNested).body;
         expect(bodysub4.nodes.length, 1);
-        expect(bodysub4.nodes[0].runtimeType, BodyTextLine);
+        expect(bodysub4.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(bodysub4.nodes[0].text, ['nested 2aaa nested 2aab']);
 
-        expect(b.nodes[4].runtimeType, BodyTextLine);
+        expect(b.nodes[4].runtimeType, ArticleBodyTextLine);
 
         expect(b.nodes[0].text, ['Line1']);
         expect(b.nodes[1].text, ['nested line1a nested line1b nested line1c']);
@@ -338,7 +338,7 @@ void main() {
     group('Leading space asIs', () {
       test("No nesting", () {
         final l = ['Line1', ' As is 1', '', 'Line2', 'Line 3', ' As is 2', '\tAs is 3', '', 'Line4'];
-        final b = Body('')..leadingSpaceAsIs = true;
+        final b = ArticleBody('')..leadingSpaceAsIs = true;
         b.build(l.iterator);
 
         expect(b.nodes.length, 6);
@@ -347,27 +347,27 @@ void main() {
       test("Nesting", () {
         final l = ['Line1', ' As is 1', '', 'Line2', 'Line3',
           '>subLine3', '> As is 2', '>\tAs is 3', '', 'Line4'];
-        final b = Body('')..leadingSpaceAsIs = true;
+        final b = ArticleBody('')..leadingSpaceAsIs = true;
         b.build(l.iterator);
 
         expect(b.nodes.length, 5);
 
-        expect(b.nodes[0].runtimeType, BodyTextLine);
+        expect(b.nodes[0].runtimeType, ArticleBodyTextLine);
         expect(b.nodes[0].text, ['Line1']);
 
-        expect(b.nodes[1].runtimeType, BodyTextLine);
+        expect(b.nodes[1].runtimeType, ArticleBodyTextLine);
         expect(b.nodes[1].text, [' As is 1']);
 
-        expect(b.nodes[2].runtimeType, BodyTextLine);
+        expect(b.nodes[2].runtimeType, ArticleBodyTextLine);
         expect(b.nodes[2].text, ['Line2 Line3']);
 
-        final b3 = (b.nodes[3] as BodyNested).body;
+        final b3 = (b.nodes[3] as ArticleBodyNested).body;
         expect(b3.nodes.length, 3);
         expect(b3.nodes[0].text, ['subLine3']);
         expect(b3.nodes[1].text, [' As is 2']);
         expect(b3.nodes[2].text, ['\tAs is 3']);
 
-        expect(b.nodes[4].runtimeType, BodyTextLine);
+        expect(b.nodes[4].runtimeType, ArticleBodyTextLine);
         expect(b.nodes[4].text, ['Line4']);
       });
 
