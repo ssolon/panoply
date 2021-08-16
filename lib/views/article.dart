@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:panoply/blocs/article_bloc.dart';
+import 'package:panoply/blocs/headers_bloc.dart';
 import 'package:panoply/models/header.dart';
 import 'package:panoply/util/article_body.dart';
+import 'package:provider/provider.dart';
 
 class Article extends StatefulWidget {
   final Header header;
@@ -30,12 +32,13 @@ class _ArticleState extends State<Article> {
         actions: [
           IconButton(onPressed: () {
             setState(() {
-              header.isRead = !header.isRead;
+              _markArticleRead(!header.isRead);
             });
           },
               icon: header.isRead
                   ? const Icon(Icons.markunread_outlined)
-                  : const Icon(Icons.mark_email_read_outlined)),
+                  : const Icon(Icons.mark_email_read_outlined)
+          ),
         ],
       ),
       body: BlocBuilder<ArticleBloc, ArticleBlocState>(
@@ -58,6 +61,12 @@ class _ArticleState extends State<Article> {
           }
         )
       );
+  }
+
+  void _markArticleRead(bool isRead) {
+    header.isRead = isRead;
+    Provider.of<HeadersBloc>(context, listen: false)
+        .add(HeadersBlocHeaderChangedEvent(header));
   }
 
   Widget _buildHeader(Header header, BuildContext context) {

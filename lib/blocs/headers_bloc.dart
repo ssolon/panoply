@@ -27,6 +27,13 @@ class HeadersBlocHeaderFetchedEvent extends HeadersBlocEvent {
   HeadersBlocHeaderFetchedEvent(this.header);
 }
 
+/// Something changed in [header].
+class HeadersBlocHeaderChangedEvent extends HeadersBlocEvent {
+  final Header header;
+
+  HeadersBlocHeaderChangedEvent(this.header);
+}
+
 /// Finished fetching headers from NewsService
 class HeadersBlocHeaderFetchDoneEvent extends HeadersBlocEvent {}
 
@@ -38,6 +45,13 @@ class HeadersBlocLoadingState extends HeadersBlocState {
   final String groupName;
 
   HeadersBlocLoadingState(this.groupName);
+}
+
+/// Something changes in [header].
+class HeadersBlocHeaderChangedState extends HeadersBlocState {
+  final Header header;
+
+  HeadersBlocHeaderChangedState(this.header);
 }
 
 /// We have a list of headers to be displayed.
@@ -75,6 +89,8 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       yield* _addFetchedHeader(event.header);
     } else if (event is HeadersBlocHeaderFetchDoneEvent) {
       yield* _handleFetchedHeaders();
+    } else if (event is HeadersBlocHeaderChangedEvent) {
+      yield HeadersBlocHeaderChangedState(event.header);
     } else {
       throw UnimplementedError("Event = $event");
     }

@@ -22,12 +22,12 @@ class HeaderList extends StatefulWidget {
 class _HeaderListState extends State<HeaderList> with UiLoggy {
   String group;
   String loadedGroup = '';
+  List<Header> headers = [];
 
   _HeaderListState(this.group);
 
   @override
   Widget build(BuildContext context) {
-    // var service = Provider.of<NewsService>(context, listen: false);
     if (group != loadedGroup) {
       Provider.of<HeadersBloc>(context).add(HeadersBlocLoadEvent(group));
     }
@@ -40,12 +40,12 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
           BlocBuilder<HeadersBloc, HeadersBlocState>(builder: (context, state) {
         if (state is HeadersBlocLoadedState) {
           loadedGroup = group;
-          return ListView(
-              children: state.headers
-                  .map((i) => _buildHeaderListItem(context, i))
-                  .toList());
+          headers = state.headers;
+          return _buildHeaderList();
         } else if (state is HeadersBlocLoadingState) {
           return Center(child: Text("Loading ${state.groupName}... "));
+        } else if (state is HeadersBlocHeaderChangedState) {
+          return _buildHeaderList();
         } else {
           return Center(child: Text("Unknown state=$state"));
         }
@@ -67,8 +67,14 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
     );
   }
 
+  Widget _buildHeaderList() {
+    return ListView(
+        children: headers
+            .map((i) => _buildHeaderListItem(context, i))
+            .toList());
+  }
+
   Widget _buildHeaderListItem(BuildContext context, Header header) {
-    Loggy("header").debug("subject=${header.subject} isRead=${header.isRead}");
     return ListTile(
         title: Text(
           header.subject,
