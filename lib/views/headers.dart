@@ -4,7 +4,6 @@ import 'package:loggy/loggy.dart';
 import 'package:panoply/blocs/article_bloc.dart';
 import 'package:panoply/blocs/headers_bloc.dart';
 import 'package:panoply/models/header.dart';
-import 'package:panoply/services/news_service.dart';
 import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
 
@@ -37,23 +36,20 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
       appBar: AppBar(
         title: Text(widget.group),
       ),
-      body: Container(
-      child: BlocBuilder<HeadersBloc, HeadersBlocState>(
-          builder: (context, state) {
-            if (state is HeadersBlocLoadedState) {
-              loadedGroup = group;
-              return ListView(
-                  children: state.headers
-                      .map((i) => _buildHeaderListItem(context, i))
-                      .toList()
-              );
-            } else if (state is HeadersBlocLoadingState) {
-              return Center(child: Text("Loading ${state.groupName}... "));
-            } else {
-              return Center(child: Text("Unknown state=$state"));
-            }
-          })
-      ),
+      body: Container(child:
+          BlocBuilder<HeadersBloc, HeadersBlocState>(builder: (context, state) {
+        if (state is HeadersBlocLoadedState) {
+          loadedGroup = group;
+          return ListView(
+              children: state.headers
+                  .map((i) => _buildHeaderListItem(context, i))
+                  .toList());
+        } else if (state is HeadersBlocLoadingState) {
+          return Center(child: Text("Loading ${state.groupName}... "));
+        } else {
+          return Center(child: Text("Unknown state=$state"));
+        }
+      })),
       bottomSheet: Container(
         padding: const EdgeInsets.all(kBodyEdgeInsets),
         child: const ServerStatus(),
@@ -61,25 +57,30 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
       floatingActionButton: FloatingActionButton(
         tooltip: 'Fetch headers',
         onPressed: () {
-          final criteria = FetchCriteria(FetchOp.lastNHeaders, 10); //TODO From user input
-          BlocProvider.of<HeadersBloc>(context).add(HeadersForGroupFetchEvent(criteria));
+          final criteria =
+              FetchCriteria(FetchOp.lastNHeaders, 10); //TODO From user input
+          BlocProvider.of<HeadersBloc>(context)
+              .add(HeadersForGroupFetchEvent(criteria));
         },
         child: const Icon(Icons.download),
       ),
     );
   }
 
-  Widget _buildHeaderListItem(context, header) {
+  Widget _buildHeaderListItem(BuildContext context, Header header) {
+    Loggy("header").debug("subject=${header.subject} isRead=${header.isRead}");
     return ListTile(
-      title: Text(header.subject),
-      onTap: () {
-        Provider.of<ArticleBloc>(context, listen:false).add(ArticleBlocFetchBodyEvent(header));
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => Article(header))
-        );
-      }
-    );
+        title: Text(
+          header.subject,
+          style: header.isRead
+              ? const TextStyle(fontWeight: FontWeight.normal)
+              : const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        onTap: () {
+          Provider.of<ArticleBloc>(context, listen: false)
+              .add(ArticleBlocFetchBodyEvent(header));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => Article(header)));
+        });
   }
 }

@@ -2,6 +2,7 @@
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:panoply/blocs/article_bloc.dart';
 import 'package:panoply/models/header.dart';
@@ -63,7 +64,10 @@ class _ArticleState extends State<Article> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children:[
-        Text(header.subject),
+        Text(header.subject,
+            style: header.isRead
+                ? const TextStyle(fontWeight: FontWeight.normal)
+                : const TextStyle(fontWeight: FontWeight.bold)),
         Text("From: ${header.from} on ${header.date}",
           style: Theme.of(context).textTheme.caption,
         )
