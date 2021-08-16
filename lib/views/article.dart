@@ -21,6 +21,7 @@ class Article extends StatefulWidget {
 
 class _ArticleState extends State<Article> {
   final Header header;
+  bool smartFormatting = true;
 
   _ArticleState(this.header);
 
@@ -30,15 +31,8 @@ class _ArticleState extends State<Article> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          IconButton(onPressed: () {
-            setState(() {
-              _markArticleRead(!header.isRead);
-            });
-          },
-              icon: header.isRead
-                  ? const Icon(Icons.markunread_outlined)
-                  : const Icon(Icons.mark_email_read_outlined)
-          ),
+          _formatAction(),
+          _readAction(),
         ],
       ),
       body: BlocBuilder<ArticleBloc, ArticleBlocState>(
@@ -63,6 +57,37 @@ class _ArticleState extends State<Article> {
       );
   }
 
+  Widget _formatAction() {
+    return
+      smartFormatting
+          ? IconButton(
+          icon: const Icon(Icons.format_align_left),
+          tooltip: 'No reformatting',
+          onPressed: (() {
+            setState(() => smartFormatting = false);
+          })
+      )
+          : IconButton(
+          icon: const Icon(Icons.format_align_justify),
+          tooltip: 'Reformat body text',
+          onPressed: (() {
+            setState(() => smartFormatting = true);
+          })
+      );
+  }
+
+  Widget _readAction() {
+    return IconButton(onPressed: () {
+      setState(() {
+        _markArticleRead(!header.isRead);
+      });
+    },
+        icon: header.isRead
+            ? const Icon(Icons.markunread_outlined)
+            : const Icon(Icons.mark_email_read_outlined)
+    );
+  }
+
   void _markArticleRead(bool isRead) {
     header.isRead = isRead;
     Provider.of<HeadersBloc>(context, listen: false)
@@ -84,14 +109,21 @@ class _ArticleState extends State<Article> {
     );
   }
 
-  Widget _buildBody(bodyLines) {
-    final body = ArticleBody('')..fillParagraphs=true;
-    body.build(bodyLines.iterator);
+  Widget _buildBody(List<String> bodyLines) {
+    if (smartFormatting) {
+      final body = ArticleBody('');
+      body.build(bodyLines.iterator);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _makeBody(body).toList(),
-    );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _makeBody(body).toList(),
+      );
+    } else {
+      return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: bodyLines.map( (l) => Text(l)).toList(),
+      );
+    }
   }
 
   Iterable<Widget> _makeBody(body) sync* {
