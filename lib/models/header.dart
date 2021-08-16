@@ -64,7 +64,7 @@ class Header {
   /// Number in the group -- if any -- else 0
   final int number;
   /// Has been read?
-  final bool isRead;
+  bool isRead;
   /// Full lines of header (with name prefix).
   final List<String> full;
 

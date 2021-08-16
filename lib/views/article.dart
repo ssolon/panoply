@@ -7,10 +7,19 @@ import 'package:panoply/blocs/article_bloc.dart';
 import 'package:panoply/models/header.dart';
 import 'package:panoply/util/article_body.dart';
 
-class Article extends StatelessWidget {
+class Article extends StatefulWidget {
   final Header header;
 
-  Article(this.header) : super(key:Key(header.msgId)) ;
+  Article(this.header) : super(key: Key(header.msgId));
+
+  @override
+  State<Article> createState() => _ArticleState(header);
+}
+
+class _ArticleState extends State<Article> {
+  final Header header;
+
+  _ArticleState(this.header);
 
   @override
   Widget build(BuildContext context) {
@@ -18,12 +27,14 @@ class Article extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          IconButton(onPressed: () {}, icon: Icon(Icons.mark_chat_unread)),
-          PopupMenuButton(itemBuilder: (context) => [
-            CheckedPopupMenuItem(
-                child: const Text('Fill paragraphs')
-            ),
-          ]),
+          IconButton(onPressed: () {
+            setState(() {
+              header.isRead = !header.isRead;
+            });
+          },
+              icon: header.isRead
+                  ? const Icon(Icons.markunread_outlined)
+                  : const Icon(Icons.mark_email_read_outlined)),
         ],
       ),
       body: BlocBuilder<ArticleBloc, ArticleBlocState>(
