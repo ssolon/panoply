@@ -76,6 +76,9 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
 
   Widget _buildHeaderListItem(BuildContext context, Header header) {
     return ListTile(
+      leading: header.isRead
+        ? const Icon(Icons.mark_email_read_outlined)
+        : const Icon(Icons.mark_email_unread_outlined),
         title: Text(
           header.subject,
           style: header.isRead
