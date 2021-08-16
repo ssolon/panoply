@@ -17,6 +17,14 @@ class Article extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(onPressed: () {}, icon: Icon(Icons.mark_chat_unread)),
+          PopupMenuButton(itemBuilder: (context) => [
+            CheckedPopupMenuItem(
+                child: const Text('Fill paragraphs')
+            ),
+          ]),
+        ],
       ),
       body: BlocBuilder<ArticleBloc, ArticleBlocState>(
           builder: (context, state) {
@@ -24,7 +32,7 @@ class Article extends StatelessWidget {
               return ListView(
                   padding: const EdgeInsets.all(10.0), //TODO Konstant or setting
                   children: [
-                    _buildHeader(state.header),
+                    _buildHeader(state.header, context),
                     Divider(),
                     _buildBody(state.body),
                   ]
@@ -40,12 +48,14 @@ class Article extends StatelessWidget {
       );
   }
 
-  Widget _buildHeader(header) {
+  Widget _buildHeader(Header header, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children:[
         Text(header.subject),
-        Text(header.number.toString()),
+        Text("From: ${header.from} on ${header.date}",
+          style: Theme.of(context).textTheme.caption,
+        )
       ],
     );
   }
