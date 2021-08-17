@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/foundation.dart';
 
 /// Header fetch request criteria
@@ -117,4 +119,10 @@ class ThreadedHeader extends Header {
   String toString() {
     return 'ThreadedHeader{Subject: $subject refs: $refs}';
   }
+}
+
+class HeaderListEntry extends LinkedListEntry<HeaderListEntry> {
+  final Header header;
+
+  HeaderListEntry(this.header);
 }

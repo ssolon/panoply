@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
@@ -68,13 +70,16 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
   }
 
   Widget _buildHeaderList() {
+    final visibleHeaders = _makeVisibleHeaders();
     return ListView(
-        children: headers
-            .map((i) => _buildHeaderListItem(context, i))
+        children: visibleHeaders
+            .map((e) => _buildHeaderListItem(context, e))
             .toList());
   }
 
-  Widget _buildHeaderListItem(BuildContext context, Header header) {
+  Widget _buildHeaderListItem(BuildContext context, HeaderListEntry headerEntry) {
+    final header = headerEntry.header;
+
     return ListTile(
       leading: header.isRead
         ? const Icon(Icons.mark_email_read_outlined)
@@ -86,10 +91,23 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
               : const TextStyle(fontWeight: FontWeight.bold),
         ),
         onTap: () {
-          Provider.of<ArticleBloc>(context, listen: false)
-              .add(ArticleBlocFetchBodyEvent(header));
+          // Provider.of<ArticleBloc>(context, listen: false)
+          //     .add(ArticleBlocFetchBodyEvent(header));
           Navigator.push(context,
-              MaterialPageRoute(builder: (context) => Article(header)));
+              MaterialPageRoute(builder: (context) => Article(headerEntry)));
         });
   }
+
+  /// Create a linked list of headers that have been sorted, filtered, whatever
+  /// and represent what should be shown on the screen and thus iterated through
+  /// on the article page.
+  /// TODO Threading?
+  LinkedList<HeaderListEntry> _makeVisibleHeaders() {
+    final result = LinkedList<HeaderListEntry>();
+
+    //TODO Filtering and sorting
+    headers.forEach((e) => result.add(HeaderListEntry(e)));
+    return result;
+  }
 }
+

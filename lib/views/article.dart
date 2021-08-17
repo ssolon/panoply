@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:loggy/loggy.dart';
 import 'package:panoply/blocs/article_bloc.dart';
 import 'package:panoply/blocs/headers_bloc.dart';
 import 'package:panoply/models/header.dart';
@@ -11,26 +12,36 @@ import 'package:panoply/util/article_body.dart';
 import 'package:provider/provider.dart';
 
 class Article extends StatefulWidget {
-  final Header header;
+  final HeaderListEntry startingEntry;
 
-  Article(this.header) : super(key: Key(header.msgId));
+  Article(this.startingEntry) : super();
 
   @override
-  State<Article> createState() => _ArticleState(header);
+  State<Article> createState() => _ArticleState(startingEntry);
 }
 
 class _ArticleState extends State<Article> {
-  final Header header;
+  HeaderListEntry? currentHeaderEntry;
+  HeaderListEntry? nextHeaderEntry;
   bool smartFormatting = true;
+  bool get isCurrentRead => currentHeaderEntry?.header.isRead ?? false;
+  void set isCurrentRead(bool newIsRead) {
+    if (currentHeaderEntry != null) {
+      currentHeaderEntry!.header.isRead = newIsRead;
+    }
+  }
 
-  _ArticleState(this.header);
+  _ArticleState(this.nextHeaderEntry); // Haven't fetched it yet
 
   @override
   Widget build(BuildContext context) {
+    _fetchNextBody(context); // If needed
 
     return Scaffold(
       appBar: AppBar(
         actions: [
+          _prevAction(),
+          _nextAction(),
           _formatAction(),
           _readAction(),
         ],
@@ -49,12 +60,47 @@ class _ArticleState extends State<Article> {
             } else {
               return Center(
                   child:
-                  Text("Article '${header.subject}' is not available")
+                  Text("Article '${currentHeaderEntry?.header.subject}' is not available")
               );
             }
           }
         )
       );
+  }
+
+  /// If the nextEntry doesn't match the current one, have the next fetched.
+  void _fetchNextBody(context) {
+    if (currentHeaderEntry != nextHeaderEntry) {
+      currentHeaderEntry = nextHeaderEntry;
+      assert(currentHeaderEntry != null);
+
+      if (currentHeaderEntry != null) {
+        Provider.of<ArticleBloc>(context, listen: false)
+            .add(ArticleBlocFetchBodyEvent(currentHeaderEntry!.header));
+      }
+    }
+  }
+
+  Widget _prevAction() {
+    return IconButton(
+      icon: Icon(Icons.navigate_before),
+      onPressed: (currentHeaderEntry?.previous != null)
+          ? () =>
+          setState (() =>
+          nextHeaderEntry = currentHeaderEntry?.previous ?? nextHeaderEntry)
+          : null,
+    );
+  }
+
+  Widget _nextAction() {
+    return IconButton(
+      icon: Icon(Icons.navigate_next),
+      onPressed: (currentHeaderEntry?.next != null)
+          ? () =>
+          setState (() =>
+          nextHeaderEntry = currentHeaderEntry?.next ?? nextHeaderEntry)
+          : null,
+    );
   }
 
   Widget _formatAction() {
@@ -79,19 +125,21 @@ class _ArticleState extends State<Article> {
   Widget _readAction() {
     return IconButton(onPressed: () {
       setState(() {
-        _markArticleRead(!header.isRead);
+        _markArticleRead(!isCurrentRead);
       });
     },
-        icon: header.isRead
+        icon: isCurrentRead
             ? const Icon(Icons.markunread_outlined)
             : const Icon(Icons.mark_email_read_outlined)
     );
   }
 
   void _markArticleRead(bool isRead) {
-    header.isRead = isRead;
-    Provider.of<HeadersBloc>(context, listen: false)
-        .add(HeadersBlocHeaderChangedEvent(header));
+    if (currentHeaderEntry != null) {
+      currentHeaderEntry!.header.isRead = isRead;
+      Provider.of<HeadersBloc>(context, listen: false)
+          .add(HeadersBlocHeaderChangedEvent(currentHeaderEntry!.header));
+    }
   }
 
   Widget _buildHeader(Header header, BuildContext context) {
@@ -102,7 +150,7 @@ class _ArticleState extends State<Article> {
             style: header.isRead
                 ? const TextStyle(fontWeight: FontWeight.normal)
                 : const TextStyle(fontWeight: FontWeight.bold)),
-        Text("From: ${header.from} on ${header.date}",
+        Text("From: ${header.from} on ${header.date} (${header.number})",
           style: Theme.of(context).textTheme.caption,
         )
       ],

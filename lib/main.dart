@@ -12,7 +12,7 @@ import 'blocs/headers_bloc.dart';
 import 'blocs/status_bloc.dart';
 
 void main() {
-  Loggy.initLoggy();
+  Loggy.initLoggy(logPrinter: const PrettyPrinter());
 
   Bloc.observer = Observer();
 
