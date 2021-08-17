@@ -167,7 +167,7 @@ class _ArticleState extends State<Article> {
 
   Widget _buildBody(List<String> bodyLines) {
     if (smartFormatting) {
-      final body = ArticleBody('');
+      final body = ArticleBody('', currentHeaderEntry?.header.getString('Content-Transfer-Encoding'));
       body.build(bodyLines.iterator);
 
       return Column(

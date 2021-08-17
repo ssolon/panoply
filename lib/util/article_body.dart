@@ -11,6 +11,9 @@ class ArticleBody {
   /// The prefix for all the nodes in this body
   final String prefix;
 
+  /// Transfer encoding to be used when builing the body
+  String? transferEncoding; // TODO Support quoted-printable, at least
+
   /// When true lines between line breaks (by default blank lines) will
   /// be joined into a single line of text.
   /// Default: true
@@ -26,9 +29,9 @@ class ArticleBody {
 
   /// Create a body of text prefixed by [prefix]. Top level should usually
   /// have a prefix of ''.
-  ArticleBody(this.prefix);
+  ArticleBody(this.prefix, this.transferEncoding);
 
-  String? build(Iterator<String> lines,[String? reprocessLine]) {
+  String? build(Iterator<String> lines, {String? reprocessLine}) {
     var currentLine = reprocessLine;
 
     while (true) {
@@ -56,11 +59,12 @@ class ArticleBody {
         addLine(prefixMatch?.group(2) ?? '');
         currentLine = null;
       } else { // deeper down - new body
-        final sub = ArticleBodyNested(ArticleBody(currentPrefix)
-          ..fillParagraphs = fillParagraphs
-          ..leadingSpaceAsIs = leadingSpaceAsIs);
+        final sub = ArticleBodyNested(
+            ArticleBody(currentPrefix, transferEncoding)
+              ..fillParagraphs = fillParagraphs
+              ..leadingSpaceAsIs = leadingSpaceAsIs);
         nodes.add(sub);
-        currentLine = sub.body.build(lines, currentLine);
+        currentLine = sub.body.build(lines, reprocessLine: currentLine);
       }
     }
   }

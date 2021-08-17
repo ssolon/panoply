@@ -83,6 +83,7 @@ class Header {
 
   Header(this.number, this.full, [this.isRead  = false]);
 
+  /// Get header value for [name].
   String getString(String name) {
     final checkName = name.toLowerCase() + ':';
     final chkLength = checkName.length;
