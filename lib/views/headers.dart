@@ -25,6 +25,7 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
   String group;
   String loadedGroup = '';
   List<Header> headers = [];
+  Header? currentlySelectedHeader;
 
   _HeaderListState(this.group);
 
@@ -90,11 +91,13 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
               ? const TextStyle(fontWeight: FontWeight.normal)
               : const TextStyle(fontWeight: FontWeight.bold),
         ),
-        onTap: () {
-          // Provider.of<ArticleBloc>(context, listen: false)
-          //     .add(ArticleBlocFetchBodyEvent(header));
-          Navigator.push(context,
+        selected: currentlySelectedHeader == header,
+        onTap: () async {
+          final selectedEntry = await Navigator.push(context,
               MaterialPageRoute(builder: (context) => Article(headerEntry)));
+          setState(() {
+            currentlySelectedHeader = selectedEntry?.header;
+          });
         });
   }
 

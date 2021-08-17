@@ -37,35 +37,43 @@ class _ArticleState extends State<Article> {
   Widget build(BuildContext context) {
     _fetchNextBody(context); // If needed
 
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          _prevAction(),
-          _nextAction(),
-          _formatAction(),
-          _readAction(),
-        ],
-      ),
-      body: BlocBuilder<ArticleBloc, ArticleBlocState>(
-          builder: (context, state) {
-            if (state is ArticleBlocFetchedState) {
-              return ListView(
-                  padding: const EdgeInsets.all(10.0), //TODO Konstant or setting
-                  children: [
-                    _buildHeader(state.header, context),
-                    Divider(),
-                    _buildBody(state.body),
-                  ]
-              );
-            } else {
-              return Center(
-                  child:
-                  Text("Article '${currentHeaderEntry?.header.subject}' is not available")
-              );
-            }
-          }
+    return WillPopScope(
+        onWillPop: () async {
+          Navigator.pop(context, currentHeaderEntry);
+          return false;
+        },
+        child: Scaffold(
+            appBar: AppBar(
+              actions: [
+                _prevAction(),
+                _nextAction(),
+                _formatAction(),
+                _readAction(),
+              ],
+            ),
+            body: BlocBuilder<ArticleBloc, ArticleBlocState>(
+                builder: (context, state) {
+                  if (state is ArticleBlocFetchedState) {
+                    return ListView(
+                        padding: const EdgeInsets.all(10.0),
+                        //TODO Konstant or setting
+                        children: [
+                          _buildHeader(state.header, context),
+                          Divider(),
+                          _buildBody(state.body),
+                        ]
+                    );
+                  } else {
+                    return Center(
+                        child:
+                        Text("Article '${currentHeaderEntry?.header
+                            .subject}' is not available")
+                    );
+                  }
+                }
+            )
         )
-      );
+    );
   }
 
   /// If the nextEntry doesn't match the current one, have the next fetched.
