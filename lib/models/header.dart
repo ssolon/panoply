@@ -190,9 +190,11 @@ class HeadersForGroup {
   String groupName;
   int firstArticleNumber = -1;
   int lastArticleNumber = -1;
-  List<Header> headers = [];
+  Map<String, Header> headers = {};
 
-  HeadersForGroup(this.groupName, this.headers) {}
+  HeadersForGroup(this.groupName, this.headers);
+
+  HeadersForGroup.empty(this.groupName);
 }
 
 class HeaderListEntry extends LinkedListEntry<HeaderListEntry> {

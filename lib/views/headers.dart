@@ -43,12 +43,12 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
           BlocBuilder<HeadersBloc, HeadersBlocState>(builder: (context, state) {
             if (state is HeadersBlocLoadedState) {
               loadedGroup = group;
-              headers = state.headers;
+              headers = state.headers.values.toList();
               return _buildHeaderList();
             } else if (state is HeadersBlocFetchDoneState) {
               Provider.of<HeadersBloc>(context, listen: false)
                   .add(HeadersBlocSaveEvent(state.headers));
-              headers = state.headers.headers;
+              headers = state.headers.headers.values.toList(); // TODO Combine with above?
               return _buildHeaderList();
             } else if (state is HeadersBlocLoadingState) {
               return Center(child: Text("Loading ${state.groupName}... "));

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
 import 'package:panoply/models/header.dart';
@@ -85,7 +85,7 @@ class HeadersBlocLoadedState extends HeadersBlocState {
   String get groupName => _headersForGroup.groupName;
   int get firstArticleNumber => _headersForGroup.firstArticleNumber;
   int get lastArticleNumber => _headersForGroup.lastArticleNumber;
-  List<Header> get headers => _headersForGroup.headers;
+  Map<String, Header> get headers => _headersForGroup.headers;
 
   HeadersBlocLoadedState(this._headersForGroup);
 }
@@ -96,7 +96,7 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
   final log = Loggy("HeadersBloc");
 
   /// We build a list of headers here for the current [groupName].
-  List<Header> _loadedHeaders = [];
+  HeadersForGroup _loadedHeaders = HeadersForGroup.empty('');
 
   // Holding area for fetched headers
   List<Header> _fetchedHeaders = [];
@@ -126,8 +126,9 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       HeadersForGroup headers) async* {
     final file = await headersFile(headers.groupName);
 
-    final jsonString =
-        jsonEncode(headers.headers.map((h) => h.toJson()).toList());
+    final jsonString = jsonEncode(
+        headers.headers.values.map((h) => h.toJson()).toList()
+    );
     await file.writeAsString(jsonString);
 
     yield HeadersBlocSavedState();
@@ -142,17 +143,15 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
 
     if (file.existsSync()) {
       final json = jsonDecode(await file.readAsString());
-      // final l = json.map<ThreadedHeader>((h) {
-      //   return ThreadedHeader.from(Header.fromJson(h));
-      // }).toList();
-      _loadedHeaders = json.map<Header>((h) {
-        return ArticleHeader.fromJson(h);
-      }).toList();
+      _loadedHeaders = _mergeHeaders(
+          HeadersForGroup.empty(groupName),
+          json.map<Header>((h) => ArticleHeader.fromJson(h))
+      );
     } else {
-      _loadedHeaders = []; // Nothing saved
+      _loadedHeaders = HeadersForGroup.empty(groupName); // Nothing was saved
     }
 
-    yield HeadersBlocLoadedState(HeadersForGroup(groupName, _loadedHeaders));
+    yield HeadersBlocLoadedState(_loadedHeaders);
   }
 
   /// Return the full path for storing headers for [groupName].
@@ -192,14 +191,29 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
 
   /// Deal with fetched headers
   Stream<HeadersBlocState> _handleFetchedHeaders(String groupName) async* {
-    //!!!! For now just convert to threaded header and replace loaded
-    // TODO Merge fetched headers
     // TODO Threading
     // TODO Cleanup expired headers using low article number from (LIST)GROUP
 
-    _loadedHeaders = _fetchedHeaders;
+    final result = _mergeHeaders(_loadedHeaders, _fetchedHeaders);
     _fetchedHeaders = [];
+    yield HeadersBlocFetchDoneState(result);
+  }
 
-    yield HeadersBlocFetchDoneState(HeadersForGroup(groupName, _loadedHeaders));
+  /// Merge headers from [newHeaders] to destination, updating meta data
+  /// in [destination] and returning the updated [destination].
+  HeadersForGroup _mergeHeaders(
+      HeadersForGroup destination,
+      Iterable<Header> newHeaders) {
+
+    for (final h in newHeaders) {
+      destination.firstArticleNumber == -1
+      ? h.number : min(destination.firstArticleNumber, h.number);
+      destination.lastArticleNumber  == -1
+      ? h.number : max(destination.lastArticleNumber, h.number);
+      
+      destination.headers.putIfAbsent(h.msgId, () => h);
+    }
+
+    return destination;
   }
 }
