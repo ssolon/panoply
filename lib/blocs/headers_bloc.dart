@@ -68,6 +68,7 @@ class HeadersBlocFetchDoneState extends HeadersBlocState {
 
   HeadersBlocFetchDoneState(this.headers);
 }
+
 class HeadersBlocSavedState extends HeadersBlocState {}
 
 /// Something changes in [header].
@@ -121,10 +122,12 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
     }
   }
 
-  Stream<HeadersBlocState> _saveHeadersForGroup(HeadersForGroup headers) async* {
+  Stream<HeadersBlocState> _saveHeadersForGroup(
+      HeadersForGroup headers) async* {
     final file = await headersFile(headers.groupName);
 
-    final jsonString = jsonEncode(headers.headers.map( (h) => h.toJson()).toList());
+    final jsonString =
+        jsonEncode(headers.headers.map((h) => h.toJson()).toList());
     await file.writeAsString(jsonString);
 
     yield HeadersBlocSavedState();
@@ -145,10 +148,8 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       _loadedHeaders = json.map<ThreadedHeader>((h) {
         return ThreadedHeader.from(Header.fromJson(h));
       }).toList();
-
-    }
-    else {
-      _loadedHeaders = []; // Nothing save
+    } else {
+      _loadedHeaders = []; // Nothing saved
     }
 
     yield HeadersBlocLoadedState(HeadersForGroup(groupName, _loadedHeaders));
@@ -159,8 +160,10 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
     Directory appDocDir = await getApplicationDocumentsDirectory();
     return Future.value(File(join(appDocDir.path, "$groupName.headers")));
   }
+
   /// Fetch headers meeting [criteria] from server using [NewsService].
-  Stream<HeadersBlocLoadingState> _fetchHeaders(String groupName, FetchCriteria criteria) async* {
+  Stream<HeadersBlocLoadingState> _fetchHeaders(
+      String groupName, FetchCriteria criteria) async* {
     log.debug("_loadHeaders criteria=$criteria");
     final bloc = this;
 
@@ -169,13 +172,12 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
         .listen((state) {
       if (state is NewsServiceGroupStatsState) {
         log.debug("Stats for group=${state.groupName}"
-                  " estimatedCount=${state.estimatedCount}"
-                  " low=${state.lowWaterMark}"
-                  " high=${state.highWaterMark}");
+            " estimatedCount=${state.estimatedCount}"
+            " low=${state.lowWaterMark}"
+            " high=${state.highWaterMark}");
       } else if (state is NewsServiceHeaderFetchedState) {
         bloc.add(HeadersBlocHeaderFetchedEvent(state.header));
       } else if (state is NewsServiceHeadersFetchDoneState) {
-        log.debug("-----> NewsServiceHeadersFetchDoneState");
         bloc.add(HeadersBlocHeaderFetchDoneEvent(state.groupName));
       }
     });
@@ -190,7 +192,6 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
 
   /// Deal with fetched headers
   Stream<HeadersBlocState> _handleFetchedHeaders(String groupName) async* {
-
     //!!!! For now just convert to threaded header and replace loaded
     // TODO Merge fetched headers
     // TODO Threading
