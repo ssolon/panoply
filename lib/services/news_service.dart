@@ -79,9 +79,10 @@ class NewsServiceHeaderFetchedState extends NewsServiceState {
 
 @immutable
 class NewsServiceHeadersFetchDoneState extends NewsServiceState {
+  final String groupName;
   final int headerCount;
 
-  NewsServiceHeadersFetchDoneState(this.headerCount);
+  NewsServiceHeadersFetchDoneState(this.groupName, this.headerCount);
 }
 class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
 
@@ -147,7 +148,7 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
     // Update status to done
 
     _updateStatus("$count headers fetched for ${request.groupName}");
-    yield NewsServiceHeadersFetchDoneState(count);
+    yield NewsServiceHeadersFetchDoneState(request.groupName, count);
   }
 
   Stream<NewsServiceState> _reportGroupStats(Response response) async* {

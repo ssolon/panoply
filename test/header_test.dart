@@ -1,31 +1,12 @@
 
+import 'dart:convert';
+
 import 'package:panoply/models/header.dart';
 import 'package:test/test.dart';
 
 void main() {
 
   group('Getters', () {
-    final testHeader1 = r'''Path: aioe.org!eternal-september.org!reader02.eternal-september.org!.POSTED!not-for-mail
-    From: Technobarbarian <Technobarbarian-ztopzpam@gmail.com>
-    Newsgroups: rec.outdoors.rv-travel
-    Subject: Re: OT? - Sigh
-    Date: Mon, 9 Aug 2021 23:31:33 -0000 (UTC)
-    Organization: A noiseless patient Spider
-    Lines: 124
-    Bytes: 1024
-    Message-ID: <sesdsl$7pf$1@dont-email.me>
-    References: <sep82b$vc1$1@dont-email.me> <sepbfq$bvg$1@dont-email.me>
-    Mime-Version: 1.0
-    Content-Type: text/plain; charset=UTF-8
-    Content-Transfer-Encoding: 8bit
-    Injection-Date: Mon, 9 Aug 2021 23:31:33 -0000 (UTC)
-    Injection-Info: reader02.eternal-september.org; posting-host="0abb8fd9cfcc434e8f20572285282683";
-    logging-data="7983"; mail-complaints-to="abuse@eternal-september.org";	posting-account="U2FsdGVkX1/Ny5Tq5hfWkouJeaYewMYYYXhw5eYnkXc="
-    User-Agent: Pan/0.146 (Hic habitat felicitas; d7a48b4
-    gitlab.gnome.org/GNOME/pan.git)
-    Cancel-Lock: sha1:8zGQxa8wcZEpamE27upal41qW4c=
-    Xref: aioe.org rec.outdoors.rv-travel:349310'''.split('\n').map((e) =>
-        e.trim()).toList();
 
     test('With values', () {
       final h = Header(1234, testHeader1);
@@ -104,4 +85,47 @@ void main() {
     });
 
   });
+
+  group('Persistence', () {
+    test('round trip json', () {
+      final lines=[
+        'From: Technobarbarian <Technobarbarian-ztopzpam@gmail.com>',
+        'Newsgroups: rec.outdoors.rv-travel',
+        'Subject: Re: OT? - Sigh',
+      ];
+
+      final h = Header(1, lines);
+      final j = jsonEncode(h.toJson());
+      final j2 = jsonEncode([1,2,3]);
+      final newl = jsonDecode(j2);
+      final newh = Header.fromJson(jsonDecode(j));
+
+      expect(h.number, newh.number, reason: 'Number');
+      expect(h.subject, newh.subject, reason: 'Subject');
+      expect(h.getString('Newsgroups'), h.getString('Newsgroups'),
+          reason: 'Newsgroups');
+    });
+  });
 }
+
+final testHeader1 = r'''Path: aioe.org!eternal-september.org!reader02.eternal-september.org!.POSTED!not-for-mail
+    From: Technobarbarian <Technobarbarian-ztopzpam@gmail.com>
+    Newsgroups: rec.outdoors.rv-travel
+    Subject: Re: OT? - Sigh
+    Date: Mon, 9 Aug 2021 23:31:33 -0000 (UTC)
+    Organization: A noiseless patient Spider
+    Lines: 124
+    Bytes: 1024
+    Message-ID: <sesdsl$7pf$1@dont-email.me>
+    References: <sep82b$vc1$1@dont-email.me> <sepbfq$bvg$1@dont-email.me>
+    Mime-Version: 1.0
+    Content-Type: text/plain; charset=UTF-8
+    Content-Transfer-Encoding: 8bit
+    Injection-Date: Mon, 9 Aug 2021 23:31:33 -0000 (UTC)
+    Injection-Info: reader02.eternal-september.org; posting-host="0abb8fd9cfcc434e8f20572285282683";
+    logging-data="7983"; mail-complaints-to="abuse@eternal-september.org";	posting-account="U2FsdGVkX1/Ny5Tq5hfWkouJeaYewMYYYXhw5eYnkXc="
+    User-Agent: Pan/0.146 (Hic habitat felicitas; d7a48b4
+    gitlab.gnome.org/GNOME/pan.git)
+    Cancel-Lock: sha1:8zGQxa8wcZEpamE27upal41qW4c=
+    Xref: aioe.org rec.outdoors.rv-travel:349310'''.split('\n').map((e) =>
+    e.trim()).toList();

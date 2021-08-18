@@ -65,23 +65,32 @@ class FetchCriteria {
 class Header {
   /// Number in the group -- if any -- else 0
   final int number;
+
   /// Has been read?
   bool isRead;
+
   /// Full lines of header (with name prefix).
   final List<String> full;
 
   // Getters on full lines
 
   String get subject => getString('subject');
+
   String get from => getString('from');
+
   String get date => getString('date');
+
   String get msgId => getString('message-id');
+
   String get references => getString('references');
+
   int get bytes => getInt('bytes');
+
   int get lines => getInt('lines');
+
   String get xref => getString('xref');
 
-  Header(this.number, this.full, [this.isRead  = false]);
+  Header(this.number, this.full, [this.isRead = false]);
 
   /// Get header value for [name].
   String getString(String name) {
@@ -102,6 +111,17 @@ class Header {
     return s.isEmpty ? 0 : int.parse(s);
   }
 
+  Header.fromJson(Map<String, dynamic> json)
+      : number = json['number'],
+        isRead = json['isRead'],
+        full = List<String>.from(json['full']);
+
+  Map<String, dynamic> toJson() => {
+    'number': number,
+    'isRead': isRead,
+    'full': full
+  };
+
   @override
   String toString() {
     return 'Header{number: $number, isRead: $isRead, full: $full}';
@@ -120,6 +140,16 @@ class ThreadedHeader extends Header {
   String toString() {
     return 'ThreadedHeader{Subject: $subject refs: $refs}';
   }
+}
+
+/// Headers for a group
+class HeadersForGroup {
+  String groupName;
+  int firstArticleNumber = -1;
+  int lastArticleNumber = -1;
+  List<Header> headers = [];
+
+  HeadersForGroup(this.groupName, this.headers) {}
 }
 
 class HeaderListEntry extends LinkedListEntry<HeaderListEntry> {

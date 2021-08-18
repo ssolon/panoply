@@ -41,18 +41,26 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
       ),
       body: Container(child:
           BlocBuilder<HeadersBloc, HeadersBlocState>(builder: (context, state) {
-        if (state is HeadersBlocLoadedState) {
-          loadedGroup = group;
-          headers = state.headers;
-          return _buildHeaderList();
-        } else if (state is HeadersBlocLoadingState) {
-          return Center(child: Text("Loading ${state.groupName}... "));
-        } else if (state is HeadersBlocHeaderChangedState) {
-          return _buildHeaderList();
-        } else {
-          return Center(child: Text("Unknown state=$state"));
-        }
-      })),
+            if (state is HeadersBlocLoadedState) {
+              loadedGroup = group;
+              headers = state.headers;
+              return _buildHeaderList();
+            } else if (state is HeadersBlocFetchDoneState) {
+              Provider.of<HeadersBloc>(context, listen: false)
+                  .add(HeadersBlocSaveEvent(state.headers));
+              headers = state.headers.headers;
+              return _buildHeaderList();
+            } else if (state is HeadersBlocLoadingState) {
+              return Center(child: Text("Loading ${state.groupName}... "));
+            } else if (state is HeadersBlocHeaderChangedState) {
+              return _buildHeaderList();
+            } else if (state is HeadersBlocSavedState) {
+              //TODO Some sort of clean/dirty flag to control saving?
+              return _buildHeaderList();
+            } else {
+              return Center(child: Text("Unknown state=$state"));
+            }
+          })),
       bottomSheet: Container(
         padding: const EdgeInsets.all(kBodyEdgeInsets),
         child: const ServerStatus(),
@@ -61,9 +69,9 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
         tooltip: 'Fetch headers',
         onPressed: () {
           final criteria =
-              FetchCriteria(FetchOp.lastNHeaders, 10); //TODO From user input
-          BlocProvider.of<HeadersBloc>(context)
-              .add(HeadersForGroupFetchEvent(criteria));
+              FetchCriteria(FetchOp.lastNHeaders, 30); //TODO From user input
+          BlocProvider.of<HeadersBloc>(context, listen: false)
+              .add(HeadersForGroupFetchEvent(loadedGroup, criteria));
         },
         child: const Icon(Icons.download),
       ),
