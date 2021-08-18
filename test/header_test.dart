@@ -9,7 +9,7 @@ void main() {
   group('Getters', () {
 
     test('With values', () {
-      final h = Header(1234, testHeader1);
+      final h = ArticleHeader(1234, testHeader1);
       expect(h.number, 1234, reason: 'number');
       expect(h.subject, 'Re: OT? - Sigh', reason: 'subject');
       expect(h.from, 'Technobarbarian <Technobarbarian-ztopzpam@gmail.com>',
@@ -21,11 +21,10 @@ void main() {
           reason: 'references');
       expect(h.bytes, 1024, reason: 'bytes');
       expect(h.lines, 124, reason: 'lines');
-      expect(h.xref, 'aioe.org rec.outdoors.rv-travel:349310', reason: 'xref');
     });
 
     test('Without values', () {
-      final h = Header(1234, <String>[]);
+      final h = ArticleHeader(1234, <String>[]);
       expect(h.number, 1234, reason: 'number');
       expect(h.subject, '', reason: 'subject');
       expect(h.from, '', reason: 'from');
@@ -34,11 +33,10 @@ void main() {
       expect(h.references, '', reason: 'references');
       expect(h.bytes, 0, reason: 'bytes');
       expect(h.lines, 0, reason: 'lines');
-      expect(h.xref, '', reason: 'xref');
     });
 
     test('Empty value(s)', () {
-      final h = Header(4321,[
+      final h = ArticleHeader(4321,[
         'nospace:',
         'onespace: '
       ]);
@@ -94,11 +92,9 @@ void main() {
         'Subject: Re: OT? - Sigh',
       ];
 
-      final h = Header(1, lines);
+      final h = ArticleHeader(1, lines);
       final j = jsonEncode(h.toJson());
-      final j2 = jsonEncode([1,2,3]);
-      final newl = jsonDecode(j2);
-      final newh = Header.fromJson(jsonDecode(j));
+      final newh = ArticleHeader.fromJson(jsonDecode(j));
 
       expect(h.number, newh.number, reason: 'Number');
       expect(h.subject, newh.subject, reason: 'Subject');

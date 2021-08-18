@@ -60,39 +60,96 @@ class FetchCriteria {
 
 }
 
-/// Article Header
+/// Header information about an article.
+///
+/// This may also be from an overview and represents the fields from an overview
+/// that MUST be present (per rfc3977) plus our own field(s).
+abstract class Header {
 
-class Header {
+  /// Have we read this article
+  bool get isRead;
+  set isRead(bool read);
+
+  /// Article number in group
+  int get number;
+
+  /// Subject of article
+  String get subject;
+
+  /// Who posted the message
+  String get from;
+
+  /// Date of posting
+  String get date;
+
+  /// Unique message id
+  String get msgId;
+
+  /// Message id(s) of articles this post references.
+  String get references;
+
+  /// Length of article in bytes.
+  int get bytes;
+
+  /// Length of article in lines
+  int get lines;
+
+  /// Return an arbitrary header field by name.
+  String getString(String name);
+
+  /// Threaded children
+  List<Header> get children;
+
+  Map<String, dynamic> toJson();
+
+  // Header.fromJson(String json);
+}
+
+/// Article Header from server which pulls fields from the list of text lines
+/// passed back from the HEAD request.
+
+class ArticleHeader extends Header {
   /// Number in the group -- if any -- else 0
+  @override
   final int number;
 
   /// Has been read?
+  @override
   bool isRead;
+
+  @override
+  List<Header> children=[];
 
   /// Full lines of header (with name prefix).
   final List<String> full;
 
   // Getters on full lines
 
+  @override
   String get subject => getString('subject');
 
+  @override
   String get from => getString('from');
 
+  @override
   String get date => getString('date');
 
+  @override
   String get msgId => getString('message-id');
 
+  @override
   String get references => getString('references');
 
+  @override
   int get bytes => getInt('bytes');
 
+  @override
   int get lines => getInt('lines');
 
-  String get xref => getString('xref');
+  ArticleHeader(this.number, this.full, [this.isRead = false]);
 
-  Header(this.number, this.full, [this.isRead = false]);
-
-  /// Get header value for [name].
+  /// Get header value for [name] or '' if not present.
+  @override
   String getString(String name) {
     final checkName = name.toLowerCase() + ':';
     final chkLength = checkName.length;
@@ -111,7 +168,7 @@ class Header {
     return s.isEmpty ? 0 : int.parse(s);
   }
 
-  Header.fromJson(Map<String, dynamic> json)
+  ArticleHeader.fromJson(Map<String, dynamic> json)
       : number = json['number'],
         isRead = json['isRead'],
         full = List<String>.from(json['full']);
@@ -125,20 +182,6 @@ class Header {
   @override
   String toString() {
     return 'Header{number: $number, isRead: $isRead, full: $full}';
-  }
-}
-
-class ThreadedHeader extends Header {
-  List<ThreadedHeader> refs;
-
-  ThreadedHeader(int number, List<String> full, this.refs):super(number, full);
-
-  ThreadedHeader.from(Header h, [this.refs=const []]): super(h.number, h.full, h.isRead) {
-  }
-
-  @override
-  String toString() {
-    return 'ThreadedHeader{Subject: $subject refs: $refs}';
   }
 }
 

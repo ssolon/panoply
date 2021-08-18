@@ -29,7 +29,7 @@ class ArticleBody {
 
   /// Create a body of text prefixed by [prefix]. Top level should usually
   /// have a prefix of ''.
-  ArticleBody(this.prefix, this.transferEncoding);
+  ArticleBody(this.prefix, [this.transferEncoding]);
 
   String? build(Iterator<String> lines, {String? reprocessLine}) {
     var currentLine = reprocessLine;

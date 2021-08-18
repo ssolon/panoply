@@ -96,7 +96,7 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
   final log = Loggy("HeadersBloc");
 
   /// We build a list of headers here for the current [groupName].
-  List<ThreadedHeader> _loadedHeaders = [];
+  List<Header> _loadedHeaders = [];
 
   // Holding area for fetched headers
   List<Header> _fetchedHeaders = [];
@@ -145,8 +145,8 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       // final l = json.map<ThreadedHeader>((h) {
       //   return ThreadedHeader.from(Header.fromJson(h));
       // }).toList();
-      _loadedHeaders = json.map<ThreadedHeader>((h) {
-        return ThreadedHeader.from(Header.fromJson(h));
+      _loadedHeaders = json.map<Header>((h) {
+        return ArticleHeader.fromJson(h);
       }).toList();
     } else {
       _loadedHeaders = []; // Nothing saved
@@ -197,8 +197,7 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
     // TODO Threading
     // TODO Cleanup expired headers using low article number from (LIST)GROUP
 
-    _loadedHeaders =
-        _fetchedHeaders.map((h) => ThreadedHeader.from(h)).toList();
+    _loadedHeaders = _fetchedHeaders;
     _fetchedHeaders = [];
 
     yield HeadersBlocFetchDoneState(HeadersForGroup(groupName, _loadedHeaders));

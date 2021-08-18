@@ -40,7 +40,7 @@ class NewsServiceDoneLoadingHeadersState extends NewsServiceState {
   final String groupName;
   final NntpServer server;
   final int count;
-  final List<ThreadedHeader> headers;
+  final List<Header> headers;
 
   NewsServiceDoneLoadingHeadersState(
       this.groupName,
@@ -87,7 +87,7 @@ class NewsServiceHeadersFetchDoneState extends NewsServiceState {
 class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
 
   NntpServer? primaryServer;
-  StatusBloc _statusBloc;
+  final StatusBloc _statusBloc;
   final log = Loggy('NewsService');
 
   /// Current status of this service which can be used for a status indicator.
@@ -134,10 +134,10 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
         final headerResponse = await primaryServer!.executeMultilineRequest(request);
         _checkResponse(request, primaryServer!, headerResponse);
 
-        final header = Header(n, headerResponse.body);
+        final header = ArticleHeader(n, headerResponse.body);
         // TODO Date check
         count++;
-        _updateStatus("Fetched ${count} headers");
+        _updateStatus("Fetched $count headers");
         yield NewsServiceHeaderFetchedState(header);
       }
     }
@@ -187,7 +187,7 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
 
 final testHeaders = [header1, header2, header3];
 
-final header1 = Header(349365,
+final header1 = ArticleHeader(349365,
 r'''Path: aioe.org!news.uzoreto.com!news-out.netnews.com!news.alt.net!fdc2.netnews.com!peer01.ams1!peer.ams1.xlned.com!news.xlned.com!peer03.iad!feed-me.highwinds-media.com!news.highwinds-media.com!fx39.iad.POSTED!not-for-mail
 Newsgroups: rec.outdoors.rv-travel
 X-Mozilla-News-Host: news://news.astraweb.com:119
@@ -206,7 +206,7 @@ Date: Wed, 11 Aug 2021 21:27:10 -0700
 X-Received-Bytes: 1271
 Xref: aioe.org rec.outdoors.rv-travel:349365'''.split('\n').toList());
 
-final header2 = Header(349364,
+final header2 = ArticleHeader(349364,
 r'''Path: aioe.org!eternal-september.org!reader02.eternal-september.org!.POSTED!not-for-mail
 From: Technobarbarian <Technobarbarian-ztopzpam@gmail.com>
 Newsgroups: rec.outdoors.rv-travel
@@ -227,7 +227,7 @@ gitlab.gnome.org/GNOME/pan.git)
 Cancel-Lock: sha1:E6Hbf2UvZTzFtwA4I6MIh1BdCNI=
 Xref: aioe.org rec.outdoors.rv-travel:349364'''.split('\n').toList());
 
-final header3 = Header(349363,
+final header3 = ArticleHeader(349363,
 r'''Path: aioe.org!news.snarked.org!border2.nntp.dca1.giganews.com!nntp.giganews.com!buffer2.nntp.dca1.giganews.com!buffer1.nntp.dca1.giganews.com!news.giganews.com.POSTED!not-for-mail
 NNTP-Posting-Date: Wed, 11 Aug 2021 21:00:37 -0500
 Newsgroups: rec.outdoors.rv-travel
