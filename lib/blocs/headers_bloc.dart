@@ -80,14 +80,9 @@ class HeadersBlocHeaderChangedState extends HeadersBlocState {
 
 /// We have a list of headers to be displayed.
 class HeadersBlocLoadedState extends HeadersBlocState {
-  final HeadersForGroup _headersForGroup;
+  final HeadersForGroup headersForGroup;
 
-  String get groupName => _headersForGroup.groupName;
-  int get firstArticleNumber => _headersForGroup.firstArticleNumber;
-  int get lastArticleNumber => _headersForGroup.lastArticleNumber;
-  Map<String, Header> get headers => _headersForGroup.headers;
-
-  HeadersBlocLoadedState(this._headersForGroup);
+  HeadersBlocLoadedState(this.headersForGroup);
 }
 
 class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {

@@ -22,17 +22,17 @@ class HeaderList extends StatefulWidget {
 }
 
 class _HeaderListState extends State<HeaderList> with UiLoggy {
-  String group;
-  String loadedGroup = '';
-  List<Header> headers = [];
+  String groupName;
+  HeadersForGroup currentHeaders = HeadersForGroup.empty('????');
   Header? currentlySelectedHeader;
 
-  _HeaderListState(this.group);
+  _HeaderListState(this.groupName);
 
   @override
   Widget build(BuildContext context) {
-    if (group != loadedGroup) {
-      Provider.of<HeadersBloc>(context).add(HeadersBlocLoadEvent(group));
+    if (currentHeaders.groupName != groupName) {
+      Provider.of<HeadersBloc>(context, listen: false)
+          .add(HeadersBlocLoadEvent(groupName));
     }
 
     return Scaffold(
@@ -42,13 +42,12 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
       body: Container(child:
           BlocBuilder<HeadersBloc, HeadersBlocState>(builder: (context, state) {
             if (state is HeadersBlocLoadedState) {
-              loadedGroup = group;
-              headers = state.headers.values.toList();
+              currentHeaders = state.headersForGroup;
               return _buildHeaderList();
             } else if (state is HeadersBlocFetchDoneState) {
               Provider.of<HeadersBloc>(context, listen: false)
                   .add(HeadersBlocSaveEvent(state.headers));
-              headers = state.headers.headers.values.toList(); // TODO Combine with above?
+              currentHeaders = state.headers; // TODO Combine with above?
               return _buildHeaderList();
             } else if (state is HeadersBlocLoadingState) {
               return Center(child: Text("Loading ${state.groupName}... "));
@@ -71,7 +70,7 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
           final criteria =
               FetchCriteria(FetchOp.lastNHeaders, 30); //TODO From user input
           BlocProvider.of<HeadersBloc>(context, listen: false)
-              .add(HeadersForGroupFetchEvent(loadedGroup, criteria));
+              .add(HeadersForGroupFetchEvent(currentHeaders.groupName, criteria));
         },
         child: const Icon(Icons.download),
       ),
@@ -117,7 +116,7 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
     final result = LinkedList<HeaderListEntry>();
 
     //TODO Filtering and sorting
-    headers.forEach((e) => result.add(HeaderListEntry(e)));
+    currentHeaders.headers.values.forEach((e) => result.add(HeaderListEntry(e)));
     return result;
   }
 }
