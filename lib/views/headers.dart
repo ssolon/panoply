@@ -50,16 +50,14 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
                 return _buildHeaderList();
               }
             } else if (state is HeadersBlocFetchDoneState) {
-              Provider.of<HeadersBloc>(context, listen: false)
-                  .add(HeadersBlocSaveEvent(state.headers));
-              currentHeaders = state.headers; // TODO Combine with above?
+              currentHeaders = state.headers;
+              _saveCurrentHeaders(context);
               return _buildHeaderList();
             } else if (state is HeadersBlocLoadingState) {
               return _displayLoading(state.groupName);
             } else if (state is HeadersBlocHeaderChangedState) {
               return _buildHeaderList();
             } else if (state is HeadersBlocSavedState) {
-              //TODO Some sort of clean/dirty flag to control saving?
               return _buildHeaderList();
             } else if (state is HeadersBlocInitialState) {
               return _displayLoading(groupName);
@@ -116,7 +114,13 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
           setState(() {
             currentlySelectedHeader = selectedEntry?.header;
           });
+          _saveCurrentHeaders(context); // Save any changes made by article view
         });
+  }
+
+  void _saveCurrentHeaders(BuildContext context) {
+    Provider.of<HeadersBloc>(context, listen: false)
+        .add(HeadersBlocSaveEvent(currentHeaders));
   }
 
   /// Create a linked list of headers that have been sorted, filtered, whatever
