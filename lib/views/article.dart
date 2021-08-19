@@ -54,6 +54,10 @@ class _ArticleState extends State<Article> {
             body: BlocBuilder<ArticleBloc, ArticleBlocState>(
                 builder: (context, state) {
                   if (state is ArticleBlocFetchedState) {
+                    if (_staleState(state)) {
+                      // Stale state
+                      return _displayLoading();
+                    }
                     return ListView(
                         padding: const EdgeInsets.all(10.0),
                         //TODO Konstant or setting
@@ -63,6 +67,8 @@ class _ArticleState extends State<Article> {
                           _buildBody(state.body),
                         ]
                     );
+                  } else if (state is ArticleBlockInitialState) {
+                    return _displayLoading();
                   } else {
                     return Center(
                         child:
@@ -76,6 +82,16 @@ class _ArticleState extends State<Article> {
     );
   }
 
+  /// If the state is not for the current article, it's stale and shouldn't
+  /// be displayed.
+  bool _staleState(ArticleBlocFetchedState state) {
+    return state.header.msgId != currentHeaderEntry!.header.msgId;
+  }
+
+  /// Display a loading screen while we wait for article to appear.
+  Widget _displayLoading() {
+    return Center(child: Text("Loading ${currentHeaderEntry!.header.subject}"));
+  }
   /// If the nextEntry doesn't match the current one, have the next fetched.
   void _fetchNextBody(context) {
     if (currentHeaderEntry != nextHeaderEntry) {

@@ -42,20 +42,27 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
       body: Container(child:
           BlocBuilder<HeadersBloc, HeadersBlocState>(builder: (context, state) {
             if (state is HeadersBlocLoadedState) {
-              currentHeaders = state.headersForGroup;
-              return _buildHeaderList();
+              if (state.headersForGroup.groupName != groupName) { // Stale state
+                return _displayLoading(groupName);
+              }
+              else {
+                currentHeaders = state.headersForGroup;
+                return _buildHeaderList();
+              }
             } else if (state is HeadersBlocFetchDoneState) {
               Provider.of<HeadersBloc>(context, listen: false)
                   .add(HeadersBlocSaveEvent(state.headers));
               currentHeaders = state.headers; // TODO Combine with above?
               return _buildHeaderList();
             } else if (state is HeadersBlocLoadingState) {
-              return Center(child: Text("Loading ${state.groupName}... "));
+              return _displayLoading(state.groupName);
             } else if (state is HeadersBlocHeaderChangedState) {
               return _buildHeaderList();
             } else if (state is HeadersBlocSavedState) {
               //TODO Some sort of clean/dirty flag to control saving?
               return _buildHeaderList();
+            } else if (state is HeadersBlocInitialState) {
+              return _displayLoading(groupName);
             } else {
               return Center(child: Text("Unknown state=$state"));
             }
@@ -75,6 +82,10 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
         child: const Icon(Icons.download),
       ),
     );
+  }
+
+  Widget _displayLoading(String groupName) {
+    return Center(child: Text("Loading ${groupName}... "));
   }
 
   Widget _buildHeaderList() {
