@@ -185,6 +185,14 @@ class ArticleHeader extends Header {
   }
 }
 
+/// An article which has both the headers and the body.
+class Article {
+  final ArticleHeader headers;
+  final List<String> body;
+
+  Article(this.headers, this.body);
+}
+
 /// Headers for a group
 class HeadersForGroup {
   String groupName;

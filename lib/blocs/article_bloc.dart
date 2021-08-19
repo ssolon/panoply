@@ -5,6 +5,13 @@ import 'package:panoply/services/news_service.dart';
 
 abstract class ArticleBlocEvent {}
 
+/// Fetch a complete article based on the [header].
+class ArticleBlocFetchArticleEvent extends ArticleBlocEvent {
+  final Header header;
+
+  ArticleBlocFetchArticleEvent(this.header);
+}
+
 /// Fetch an article body based on the [header].
 class ArticleBlocFetchBodyEvent extends ArticleBlocEvent {
   final Header header;
@@ -30,6 +37,10 @@ class ArticleBloc extends Bloc<ArticleBlocEvent, ArticleBlocState> {
 
   @override
   Stream<ArticleBlocState> mapEventToState(ArticleBlocEvent event) async* {
+    if (event is ArticleBlocFetchArticleEvent) {
+      final response = await _newsService.fetchArticle(event.header);
+      yield ArticleBlocFetchedState(response.headers, response.body);
+    }
     if (event is ArticleBlocFetchBodyEvent) {
       yield ArticleBlocFetchedState(
           event.header, await _newsService.fetchBody(event.header));

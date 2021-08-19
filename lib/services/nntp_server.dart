@@ -332,7 +332,7 @@ class NntpServer {
 
   /// Execute a multiline request that has headers and a body.
   Future<Response> executeMultilineWithHeadersRequest(String request) async {
-    return handleMultiLineResponse(await _stream, request);
+    return handleMultiLineResponse(await _stream, request, hasHeaders: true);
   }
 
   /// Execute a single line request.

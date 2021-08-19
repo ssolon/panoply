@@ -11,16 +11,16 @@ import 'package:panoply/models/header.dart';
 import 'package:panoply/util/article_body.dart';
 import 'package:provider/provider.dart';
 
-class Article extends StatefulWidget {
+class ArticlePage extends StatefulWidget {
   final HeaderListEntry startingEntry;
 
-  Article(this.startingEntry) : super();
+  ArticlePage(this.startingEntry) : super();
 
   @override
-  State<Article> createState() => _ArticleState(startingEntry);
+  State<ArticlePage> createState() => _ArticlePageState(startingEntry);
 }
 
-class _ArticleState extends State<Article> {
+class _ArticlePageState extends State<ArticlePage> {
   HeaderListEntry? currentHeaderEntry;
   HeaderListEntry? nextHeaderEntry;
   bool smartFormatting = true;
@@ -31,7 +31,7 @@ class _ArticleState extends State<Article> {
     }
   }
 
-  _ArticleState(this.nextHeaderEntry); // Haven't fetched it yet
+  _ArticlePageState(this.nextHeaderEntry); // Haven't fetched it yet
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +100,7 @@ class _ArticleState extends State<Article> {
 
       if (currentHeaderEntry != null) {
         Provider.of<ArticleBloc>(context, listen: false)
-            .add(ArticleBlocFetchBodyEvent(currentHeaderEntry!.header));
+            .add(ArticleBlocFetchArticleEvent(currentHeaderEntry!.header));
       }
     }
   }

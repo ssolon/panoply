@@ -165,11 +165,26 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
      _statusBloc.add(StatusBlocUpdatedStatusEvent('NewsService', status));
   }
 
+  /// Fetch and return a complete article (header and body) for [header.msgId].
+  Future<Article> fetchArticle(Header header) async {
+     final request = "ARTICLE ${header.msgId}";
+     final response = await primaryServer?.executeMultilineWithHeadersRequest(request);
+     _checkResponse("fetch article msgId=${header.msgId} subject=$header.subject",
+         primaryServer!, response!);
+
+     return Article(
+         ArticleHeader(header.number, response.headers),
+         response.body
+    );
+  }
+
+  /// Fetch the body for [header.msgId].
   Future<List<String>> fetchBody(Header header) async {
     final request = "BODY ${header.msgId}";
     final response = await primaryServer?.executeMultilineRequest(request);
     return response?.body ?? [];
   }
+
   /// Handle a response from the server in an appropriate way returning true
   /// if everything is ok and throwing if not.
   bool _checkResponse(String description, NntpServer server, Response response) {
