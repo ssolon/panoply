@@ -63,6 +63,12 @@ class HeadersBlocLoadingState extends HeadersBlocState {
   HeadersBlocLoadingState(this.groupName);
 }
 
+class HeadersBlocFetchingState extends HeadersBlocState {
+  final String groupName;
+
+  HeadersBlocFetchingState(this.groupName);
+}
+
 class HeadersBlocFetchDoneState extends HeadersBlocState {
   final HeadersForGroup headers;
 
@@ -121,9 +127,7 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       HeadersForGroup headers) async* {
     final file = await headersFile(headers.groupName);
 
-    final jsonString = jsonEncode(
-        headers.headers.values.map((h) => h.toJson()).toList()
-    );
+    final jsonString = jsonEncode(headers.toJson());
     await file.writeAsString(jsonString);
 
     yield HeadersBlocSavedState();
@@ -137,16 +141,19 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
     final file = await headersFile(groupName);
 
     if (file.existsSync()) {
-      final json = jsonDecode(await file.readAsString());
-      _loadedHeaders = _mergeHeaders(
-          HeadersForGroup.empty(groupName),
-          json.map<Header>((h) => ArticleHeader.fromJson(h))
-      );
+      final jsonString = await file.readAsString();
+      _loadedHeaders = restoreFromJson(groupName, jsonString);
     } else {
       _loadedHeaders = HeadersForGroup.empty(groupName); // Nothing was saved
     }
 
     yield HeadersBlocLoadedState(_loadedHeaders);
+  }
+
+  /// Create and HeadersForGroup object for [groupName] from [jsonString].
+  HeadersForGroup restoreFromJson(String groupName, String jsonString) {
+    final decoded = jsonDecode(jsonString);
+    return HeadersForGroup.fromJson(groupName, decoded);
   }
 
   /// Return the full path for storing headers for [groupName].
@@ -156,7 +163,7 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
   }
 
   /// Fetch headers meeting [criteria] from server using [NewsService].
-  Stream<HeadersBlocLoadingState> _fetchHeaders(
+  Stream<HeadersBlocFetchingState> _fetchHeaders(
       String groupName, FetchCriteria criteria) async* {
     log.debug("_loadHeaders criteria=$criteria");
     final bloc = this;
@@ -176,7 +183,7 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       }
     });
 
-    yield HeadersBlocLoadingState(groupName);
+    yield HeadersBlocFetchingState(groupName);
   }
 
   /// We received a header from server, add to the collection and display?
@@ -189,26 +196,9 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
     // TODO Threading
     // TODO Cleanup expired headers using low article number from (LIST)GROUP
 
-    final result = _mergeHeaders(_loadedHeaders, _fetchedHeaders);
+    final result = _loadedHeaders.mergeHeaders(_fetchedHeaders);
     _fetchedHeaders = [];
     yield HeadersBlocFetchDoneState(result);
   }
 
-  /// Merge headers from [newHeaders] to destination, updating meta data
-  /// in [destination] and returning the updated [destination].
-  HeadersForGroup _mergeHeaders(
-      HeadersForGroup destination,
-      Iterable<Header> newHeaders) {
-
-    for (final h in newHeaders) {
-      destination.firstArticleNumber == -1
-      ? h.number : min(destination.firstArticleNumber, h.number);
-      destination.lastArticleNumber  == -1
-      ? h.number : max(destination.lastArticleNumber, h.number);
-      
-      destination.headers.putIfAbsent(h.msgId, () => h);
-    }
-
-    return destination;
-  }
-}
+ }

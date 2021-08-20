@@ -12,7 +12,7 @@ void main() {
       final h = ArticleHeader(1234, testHeader1);
       expect(h.number, 1234, reason: 'number');
       expect(h.subject, 'Re: OT? - Sigh', reason: 'subject');
-      expect(h.from, 'Technobarbarian <Technobarbarian-ztopzpam@gmail.com>',
+      expect(h.from, 'Technobarbarian <test1@gmail.com>',
           reason: 'from');
       expect(h.date, 'Mon, 9 Aug 2021 23:31:33 -0000 (UTC)', reason: 'date');
       expect(h.msgId, r'<sesdsl$7pf$1@dont-email.me>', reason: 'msgId');
@@ -85,9 +85,9 @@ void main() {
   });
 
   group('Persistence', () {
-    test('round trip json', () {
+    test('round trip json list', () {
       final lines=[
-        'From: Technobarbarian <Technobarbarian-ztopzpam@gmail.com>',
+        'From: Technobarbarian <test1@gmail.com>',
         'Newsgroups: rec.outdoors.rv-travel',
         'Subject: Re: OT? - Sigh',
       ];
@@ -101,11 +101,68 @@ void main() {
       expect(h.getString('Newsgroups'), h.getString('Newsgroups'),
           reason: 'Newsgroups');
     });
+
+    test('HeadersForGroup - ArticleHeader', () {
+      List<String> headerLinesTemplate (i) => [
+        'From: Test$i <test$i@gmail.com>',
+        'Newsgroups: rec.outdoors.rv-travel',
+        'Subject: Re: OT? - Sigh',
+        'Message-ID: <message-id-$i>',
+      ];
+
+      final h1lines = [
+        'From: Test1 <test1@gmail.com>',
+        'Newsgroups: rec.outdoors.rv-travel',
+        'Subject: Re: OT? - Sigh',
+        'Message-ID: <message-id-1>',
+      ];
+
+      final h2lines = [
+        'From: Test2 <test1@gmail.com>',
+        'Newsgroups: rec.outdoors.rv-travel',
+        'Subject: Re: OT? - Sigh',
+        'Message-ID: <message-id-2>',
+      ];
+
+      final h3lines = [
+        'From: Test1 <test1@gmail.com>',
+        'Newsgroups: rec.outdoors.rv-travel',
+        'Subject: Re: OT? - Sigh',
+        'Message-ID: <message-id-3>',
+      ];
+
+      final headers = Map<String, ArticleHeader>();
+      headers['<message-id-1>'] = ArticleHeader(1, headerLinesTemplate(1));
+      headers['<message-id-2>'] = ArticleHeader(2, headerLinesTemplate(2));
+      headers['<message-id-3>'] = ArticleHeader(3, headerLinesTemplate(3));
+
+      final headersForGroup = HeadersForGroup('test', headers);
+
+      final j = jsonEncode(headersForGroup.toJson());
+      final newDecoded = jsonDecode(j);
+      final newH = HeadersForGroup.fromJson('test1', newDecoded);
+
+      expect(newH.groupName, 'test1', reason: 'groupName');
+      expect(newH.lastArticleNumber, 3, reason: 'lastArticleNumber');
+      expect(newH.firstArticleNumber, 1, reason: 'firstArticleNumber');
+
+      expect(newH.headers.length, 3, reason: 'headers.length');
+
+      for (var j = 0; j < 3; j++) {
+        final lines = headerLinesTemplate(j+1);
+        final key = "<message-id-${j+1}>";
+        expect("${newH.headers[key].runtimeType}", 'ArticleHeader', reason: 'headers[$j] runtimeType');
+        expect(newH.headers[key]?.number, j+1, reason: 'article number[$j]');
+        expect(newH.headers[key]?.from, lines[0].substring(6), reason: 'from[$j]');
+        expect(newH.headers[key]?.getString('Newsgroups'), lines[1].substring(12), reason: "newsgroups[$j]");
+        expect(newH.headers[key]?.subject, h1lines[2].substring(9), reason: 'header #$j subject');
+      }
+    });
   });
 }
 
 final testHeader1 = r'''Path: aioe.org!eternal-september.org!reader02.eternal-september.org!.POSTED!not-for-mail
-    From: Technobarbarian <Technobarbarian-ztopzpam@gmail.com>
+    From: Technobarbarian <test1@gmail.com>
     Newsgroups: rec.outdoors.rv-travel
     Subject: Re: OT? - Sigh
     Date: Mon, 9 Aug 2021 23:31:33 -0000 (UTC)

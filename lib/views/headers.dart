@@ -48,6 +48,9 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
                 currentHeaders = state.headersForGroup;
                 return _buildHeaderList();
               }
+            }
+            else if (state is HeadersBlocFetchingState) {
+              return _displayFetching(groupName);
             } else if (state is HeadersBlocFetchDoneState) {
               currentHeaders = state.headers;
               _saveCurrentHeaders(context);
@@ -83,6 +86,10 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
 
   Widget _displayLoading(String groupName) {
     return Center(child: Text("Loading ${groupName}... "));
+  }
+
+  Widget _displayFetching(String groupName) {
+    return Center(child: Text("Fetching headers for ${groupName}... "));
   }
 
   Widget _buildHeaderList() {

@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -102,13 +103,25 @@ abstract class Header {
 
   Map<String, dynamic> toJson();
 
-  // Header.fromJson(String json);
+  Header();
+
+  factory Header.fromJson(Map<String, dynamic> json) {
+    final headerType = json.keys.first;
+    if (headerType == ArticleHeader.persistTypeName) {
+      return ArticleHeader.fromJson(json);
+    }
+
+    throw Exception("Unknown article header type=$headerType");
+
+  }
 }
 
 /// Article Header from server which pulls fields from the list of text lines
 /// passed back from the HEAD request.
 
 class ArticleHeader extends Header {
+  static const persistTypeName = 'a';
+
   /// Number in the group -- if any -- else 0
   @override
   final int number;
@@ -168,20 +181,30 @@ class ArticleHeader extends Header {
     return s.isEmpty ? 0 : int.parse(s);
   }
 
-  ArticleHeader.fromJson(Map<String, dynamic> json)
-      : number = json['number'],
-        isRead = json['isRead'],
-        full = List<String>.from(json['full']);
+  factory ArticleHeader.fromJson(Map<String, dynamic> json) {
+    final h = json[persistTypeName];
+    if (h == null) {
+      throw Exception("ArticleHeader.fromJson couldn't find entry for $persistTypeName");
+    }
+    return ArticleHeader(
+        h['number'],
+        List<String>.from(h['full']),
+        h['isRead'] as bool
+    );
+
+  }
 
   Map<String, dynamic> toJson() => {
-    'number': number,
-    'isRead': isRead,
-    'full': full
+    persistTypeName: {
+      'number': number,
+      'isRead': isRead,
+      'full': full
+    }
   };
 
   @override
   String toString() {
-    return 'Header{number: $number, isRead: $isRead, full: $full}';
+    return '${persistTypeName}{number: $number, isRead: $isRead, full: $full}';
   }
 }
 
@@ -195,6 +218,8 @@ class Article {
 
 /// Headers for a group
 class HeadersForGroup {
+  static const persistTypeName = 'HeadersForGroup';
+
   String groupName;
   int firstArticleNumber = -1;
   int lastArticleNumber = -1;
@@ -203,6 +228,52 @@ class HeadersForGroup {
   HeadersForGroup(this.groupName, this.headers);
 
   HeadersForGroup.empty(this.groupName);
+
+  /// Merge headers from [newHeaders] updating meta data
+  /// in [destination] and returning this.
+  HeadersForGroup mergeHeaders(
+      Iterable<Header> newHeaders) {
+
+    for (final h in newHeaders) {
+      firstArticleNumber = firstArticleNumber == -1
+          ? h.number : min(firstArticleNumber, h.number);
+      lastArticleNumber = lastArticleNumber  == -1
+          ? h.number : max(lastArticleNumber, h.number);
+
+      headers.putIfAbsent(h.msgId, () => h);
+    }
+
+    return this;
+  }
+
+  Map<String, dynamic> toJson()  {
+    final result = Map<String, dynamic>();
+    result[persistTypeName] =
+        headers.values.map((h) => h.toJson()).toList();
+    return result;
+  }
+
+  /// Instantiate from a json dump recreating the meta data which isn't
+  /// persisted.
+  factory HeadersForGroup.fromJson(String groupName, dynamic json) {
+
+    // Special case empty state
+    if ((json as Map).isEmpty) {
+      return HeadersForGroup.empty(groupName);
+    }
+
+    final headers = json[persistTypeName];
+    if (headers == null) {
+      throw Exception("HeadersForGroup.fromJson Failed to find $persistTypeName");
+    }
+
+    // Merge into an empty object which will build the metadata.
+
+    return HeadersForGroup.empty(groupName)
+        .mergeHeaders(headers.map<Header>((h) => Header.fromJson(h))
+    );
+
+  }
 }
 
 class HeaderListEntry extends LinkedListEntry<HeaderListEntry> {
