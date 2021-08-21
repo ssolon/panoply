@@ -51,6 +51,8 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
             }
             else if (state is HeadersBlocFetchingState) {
               return _displayFetching(groupName);
+            } else if (state is HeadersBlocErrorFetchingState) {
+              return _displayError('fetching headers', state);
             } else if (state is HeadersBlocFetchDoneState) {
               currentHeaders = state.headers;
               _saveCurrentHeaders(context);
@@ -81,6 +83,12 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
         },
         child: const Icon(Icons.download),
       ),
+    );
+  }
+
+  Widget _displayError(String action, errorState) {
+    return Center(
+        child: Text("Error $action:${errorState.error}"),
     );
   }
 

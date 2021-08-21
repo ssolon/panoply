@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:math';
 
@@ -39,6 +40,13 @@ class HeadersBlocHeaderFetchedEvent extends HeadersBlocEvent {
   HeadersBlocHeaderFetchedEvent(this.header);
 }
 
+class HeadersBlocErrorFetchingEvent extends HeadersBlocEvent {
+  final String groupName;
+  final error;
+
+  HeadersBlocErrorFetchingEvent(this.groupName, this.error);
+}
+
 /// Something changed in [header].
 class HeadersBlocHeaderChangedEvent extends HeadersBlocEvent {
   final Header header;
@@ -73,6 +81,13 @@ class HeadersBlocFetchDoneState extends HeadersBlocState {
   final HeadersForGroup headers;
 
   HeadersBlocFetchDoneState(this.headers);
+}
+
+class HeadersBlocErrorFetchingState extends HeadersBlocState {
+  final String groupName;
+  final error;
+
+  HeadersBlocErrorFetchingState(this.groupName, this.error);
 }
 
 class HeadersBlocSavedState extends HeadersBlocState {}
@@ -118,6 +133,8 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
       yield* _handleFetchedHeaders(event.groupName);
     } else if (event is HeadersBlocHeaderChangedEvent) {
       yield HeadersBlocHeaderChangedState(event.header);
+    } else if (event is HeadersBlocErrorFetchingEvent) {
+      yield HeadersBlocErrorFetchingState(event.groupName, event.error);
     } else {
       throw UnimplementedError("Event = $event");
     }
@@ -180,9 +197,10 @@ class HeadersBloc extends Bloc<HeadersBlocEvent, HeadersBlocState> {
         bloc.add(HeadersBlocHeaderFetchedEvent(state.header));
       } else if (state is NewsServiceHeadersFetchDoneState) {
         bloc.add(HeadersBlocHeaderFetchDoneEvent(state.groupName));
+      } else if (state is NewsServiceHeaderFetchErrorState) {
+        bloc.add(HeadersBlocErrorFetchingEvent(groupName, state.error));
       }
     });
-
     yield HeadersBlocFetchingState(groupName);
   }
 

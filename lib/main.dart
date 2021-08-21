@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
 import 'package:flutter/material.dart';
@@ -5,7 +6,6 @@ import 'package:panoply/services/news_service.dart';
 import 'package:panoply/services/nntp_server.dart';
 import 'package:panoply/views/headers.dart';
 import 'package:panoply/views/server_status.dart';
-import 'package:provider/provider.dart';
 
 import 'blocs/article_bloc.dart';
 import 'blocs/headers_bloc.dart';

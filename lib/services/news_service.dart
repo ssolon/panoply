@@ -78,6 +78,13 @@ class NewsServiceHeaderFetchedState extends NewsServiceState {
 }
 
 @immutable
+class NewsServiceHeaderFetchErrorState extends NewsServiceState {
+  final String error;
+
+  NewsServiceHeaderFetchErrorState(this.error);
+}
+
+@immutable
 class NewsServiceHeadersFetchDoneState extends NewsServiceState {
   final String groupName;
   final int headerCount;
@@ -120,35 +127,42 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
 
      // Get article numbers for group, this also selects the group
 
-    final listNumbers = "LISTGROUP ${request.groupName} ${criteria.articleRange}";
-    var groupResponse = await primaryServer!.executeMultilineRequest(listNumbers);
+    try {
+      final listNumbers = "LISTGROUP ${request.groupName} ${criteria.articleRange}";
+      var groupResponse = await primaryServer!.executeMultilineRequest(
+          listNumbers);
 
-    if (groupResponse.isOK) {
-      yield* _reportGroupStats(groupResponse);
+      if (groupResponse.isOK) {
+        yield* _reportGroupStats(groupResponse);
 
-      final articleNumbers = criteria.iterableFor(groupResponse.body);
-      for (var articleNumber in articleNumbers) {
-        final n = int.parse(articleNumber);
+        final articleNumbers = criteria.iterableFor(groupResponse.body);
+        for (var articleNumber in articleNumbers) {
+          final n = int.parse(articleNumber);
 
-        final request = "HEAD $n";
-        final headerResponse = await primaryServer!.executeMultilineRequest(request);
-        _checkResponse(request, primaryServer!, headerResponse);
+          final request = "HEAD $n";
+          final headerResponse = await primaryServer!.executeMultilineRequest(request);
+          _checkResponse(request, primaryServer!, headerResponse);
 
-        final header = ArticleHeader(n, headerResponse.body);
-        // TODO Date check
-        count++;
-        _updateStatus("Fetched $count headers");
-        yield NewsServiceHeaderFetchedState(header);
+          final header = ArticleHeader(n, headerResponse.body);
+          // TODO Date check
+          count++;
+          _updateStatus("Fetched $count headers");
+          yield NewsServiceHeaderFetchedState(header);
+        }
       }
-    }
-    else {
-      _checkResponse("fetch '$listNumbers'", primaryServer!, groupResponse);
-    }
+      else {
+        _checkResponse("fetch '$listNumbers'", primaryServer!, groupResponse);
+      }
 
-    // Update status to done
+      // Update status to done
 
-    _updateStatus("$count headers fetched for ${request.groupName}");
-    yield NewsServiceHeadersFetchDoneState(request.groupName, count);
+      _updateStatus("$count headers fetched for ${request.groupName}");
+      yield NewsServiceHeadersFetchDoneState(request.groupName, count);
+    }
+    catch (e) {
+      log.error("Exception during header fetch:$e");
+      yield NewsServiceHeaderFetchErrorState("Exception fetching headers:$e");
+    }
   }
 
   Stream<NewsServiceState> _reportGroupStats(Response response) async* {

@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.vertisorbi.panoply">
+    package="com.veritasorbi.panoply">
    <application
         android:label="panoply"
         android:icon="@mipmap/ic_launcher">

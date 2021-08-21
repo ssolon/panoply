@@ -1,4 +1,4 @@
-package com.vertisorbi.panoply
+package com.veritasorbi.panoply
 
 import io.flutter.embedding.android.FlutterActivity
 
