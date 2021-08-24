@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:fpdart/fpdart.dart';
 
 /// Header fetch request criteria
 
@@ -98,8 +99,12 @@ abstract class Header {
   /// Return an arbitrary header field by name.
   String getString(String name);
 
+  /// This header is the child of another header
+  bool get isChild;
+  set isChild(bool value);
+
   /// Threaded children
-  List<Header> get children;
+  LinkedHashSet<Header> get children;
 
   Map<String, dynamic> toJson();
 
@@ -131,7 +136,10 @@ class ArticleHeader extends Header {
   bool isRead;
 
   @override
-  List<Header> children=[];
+  bool isChild;
+
+  @override
+  LinkedHashSet<Header> children=LinkedHashSet<Header>();
 
   /// Full lines of header (with name prefix).
   final List<String> full;
@@ -159,20 +167,26 @@ class ArticleHeader extends Header {
   @override
   int get lines => getInt('lines');
 
-  ArticleHeader(this.number, this.full, [this.isRead = false]);
+  ArticleHeader(this.number, this.full,
+      [this.isRead = false, this.isChild=false]);
 
   /// Get header value for [name] or '' if not present.
   @override
   String getString(String name) {
     final checkName = name.toLowerCase() + ':';
-    final chkLength = checkName.length;
+    final checkLength = checkName.length;
 
-    bool hit(String e) =>
-        e.length >= chkLength
-            ? e.substring(0, chkLength).toLowerCase() == checkName
-            : false;
+    bool skip(String e) =>
+        e.length >= checkLength
+            ? e.substring(0, checkLength).toLowerCase() != checkName
+            : true;
 
-    final l = full.firstWhere(hit, orElse: () => '');
+    bool cont(String e) => e.startsWith(' ');
+
+    final l = full
+        .span(skip)
+        .second.takeWhile((e) => !skip(e) || cont(e))
+        .join();
     return (l.isNotEmpty) ? l.substring(checkName.length).trim() : '';
   }
 
@@ -204,7 +218,8 @@ class ArticleHeader extends Header {
 
   @override
   String toString() {
-    return '${persistTypeName}{number: $number, isRead: $isRead, full: $full}';
+    return '${persistTypeName}{number: $number, isRead: $isRead,'
+        'isChild: $isChild, msgId: $msgId, full: $full}';
   }
 }
 
@@ -274,10 +289,37 @@ class HeadersForGroup {
     );
 
   }
+
+  /// Reset the threading
+  HeadersForGroup resetThreading() {
+    for (final h in headers.values) {
+      h.children.clear();
+      h.isChild = false;
+    }
+
+    return this;
+  }
+
+  /// Thread the contents
+  HeadersForGroup thread() {
+    for (final h in headers.values) {
+      final refs = h.references.split(' ');
+      for (final r in refs.reversed) {
+        if (headers.containsKey(r)) {
+          headers[r]!.children.add(h);
+          h.isChild = true;
+          break;
+        }
+      }
+    }
+
+    return this;
+  }
 }
 
 class HeaderListEntry extends LinkedListEntry<HeaderListEntry> {
   final Header header;
+  bool showChildren;
 
-  HeaderListEntry(this.header);
+  HeaderListEntry(this.header, [this.showChildren = false]);
 }

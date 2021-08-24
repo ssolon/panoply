@@ -4,7 +4,6 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:loggy/loggy.dart';
 import 'package:panoply/blocs/article_bloc.dart';
 import 'package:panoply/blocs/headers_bloc.dart';
 import 'package:panoply/models/header.dart';
@@ -153,7 +152,7 @@ class _ArticlePageState extends State<ArticlePage> {
       });
     },
         icon: isCurrentRead
-            ? const Icon(Icons.markunread_outlined)
+            ? const Icon(Icons.mark_email_unread_outlined)
             : const Icon(Icons.mark_email_read_outlined)
     );
   }

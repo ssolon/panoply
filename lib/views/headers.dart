@@ -23,6 +23,7 @@ class HeaderList extends StatefulWidget {
 class _HeaderListState extends State<HeaderList> with UiLoggy {
   String groupName;
   HeadersForGroup currentHeaders = HeadersForGroup.empty('????');
+  LinkedList<HeaderListEntry> visibleHeaders = LinkedList<HeaderListEntry>();
   Header? currentlySelectedHeader;
 
   _HeaderListState(this.groupName);
@@ -46,6 +47,7 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
               }
               else {
                 currentHeaders = state.headersForGroup;
+                visibleHeaders = _makeVisibleHeaders();
                 return _buildHeaderList();
               }
             }
@@ -56,6 +58,7 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
             } else if (state is HeadersBlocFetchDoneState) {
               currentHeaders = state.headers;
               _saveCurrentHeaders(context);
+              visibleHeaders = _makeVisibleHeaders();
               return _buildHeaderList();
             } else if (state is HeadersBlocLoadingState) {
               return _displayLoading(state.groupName);
@@ -77,7 +80,7 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
         tooltip: 'Fetch headers',
         onPressed: () {
           final criteria =
-              FetchCriteria(FetchOp.lastNHeaders, 30); //TODO From user input
+              FetchCriteria(FetchOp.lastNHeaders, 100); //TODO From user input
           BlocProvider.of<HeadersBloc>(context, listen: false)
               .add(HeadersForGroupFetchEvent(currentHeaders.groupName, criteria));
         },
@@ -101,35 +104,118 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
   }
 
   Widget _buildHeaderList() {
-    final visibleHeaders = _makeVisibleHeaders();
     return ListView(
         children: visibleHeaders
-            .map((e) => _buildHeaderListItem(context, e))
+            .where( (e) => !e.header.isChild) // Only top items
+            .expand((e) => _buildHeaderListItem(context, e))
             .toList());
   }
 
-  Widget _buildHeaderListItem(BuildContext context, HeaderListEntry headerEntry) {
+  Iterable<Widget> _buildHeaderListItem(
+      BuildContext context,
+      HeaderListEntry headerEntry,
+      [double marginOffset = 0.0]) sync* {
+
     final header = headerEntry.header;
 
-    return ListTile(
-      leading: header.isRead
+    final tile = ListTile(
+      key: Key(header.msgId),
+      leading: _articleIcon(header),
+      title: _articleSubject(header),
+      subtitle: Text("from ${header.from} at ${header.date}"),
+      trailing: _articleExpander(context, headerEntry),
+      selected: currentlySelectedHeader == header,
+      onTap: () async {
+        final selectedEntry = await Navigator.push(context,
+            MaterialPageRoute(
+                builder: (context) => ArticlePage(headerEntry)));
+
+        //TODO make sure the selected entry is visible
+        currentlySelectedHeader = selectedEntry?.header;
+
+        // This will also trigger a build and display the (newly?) selected
+        _saveCurrentHeaders(context); // Save any changes made by article view
+      },
+    );
+
+    yield marginOffset == 0
+        ? tile
+        : Container(
+        padding: EdgeInsets.only(left: marginOffset),
+        child: tile);
+
+    if (headerEntry.showChildren) {
+      yield* header.children.expand( (h) =>
+        _buildHeaderListItem(context, childEntryFor(h, headerEntry),
+            marginOffset + 20.0)
+      );
+    }
+  }
+
+  /// Return the listEntry for [header] which should be a child of the header
+  /// [parentEntry]. Since we've linearized the hierarchy it should be further
+  /// down the list.
+  HeaderListEntry childEntryFor(Header header, HeaderListEntry parentEntry) {
+    final headerMsgId = header.msgId;
+    var check = parentEntry.next;
+
+    while (check != null) {
+      if (check.header.msgId == headerMsgId) {
+        return check;
+      }
+      check = check.next;
+    }
+
+    // Should never happen
+    throw Exception("Couldn't find headerEntry for parentEntry=$parentEntry ");
+  }
+
+  Icon _articleIcon(Header header) {
+    return header.isRead
         ? const Icon(Icons.mark_email_read_outlined)
-        : const Icon(Icons.mark_email_unread_outlined),
-        title: Text(
-          header.subject,
-          style: header.isRead
-              ? const TextStyle(fontWeight: FontWeight.normal)
-              : const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        selected: currentlySelectedHeader == header,
-        onTap: () async {
-          final selectedEntry = await Navigator.push(context,
-              MaterialPageRoute(builder: (context) => ArticlePage(headerEntry)));
-          setState(() {
-            currentlySelectedHeader = selectedEntry?.header;
-          });
-          _saveCurrentHeaders(context); // Save any changes made by article view
-        });
+        : const Icon(Icons.mark_email_unread_outlined);
+  }
+
+  Widget _articleSubject(Header header) {
+
+    // Unread count that doesn't include this top entry. How pan does it.
+    final unreadCount = _countUnread(header) - _unread(header);
+
+    return Text(
+      header.subject + ((unreadCount > 0) ? " ($unreadCount)" : ""),
+      style: header.isRead
+          ? const TextStyle(fontWeight: FontWeight.normal)
+          : const TextStyle(fontWeight: FontWeight.bold),
+    );
+  }
+
+  int _unread(Header header) => header.isRead ? 0 : 1;
+
+  int _countUnread(Header header) {
+    return header.children.fold(
+        _unread(header),
+        (int prev, Header h) => prev + _countUnread(h));
+  }
+
+  Widget? _articleExpander(BuildContext context, HeaderListEntry headerEntry) {
+    if (headerEntry.header.children.isEmpty) {
+      return null;
+    }
+
+    return IconButton(
+      onPressed: () {
+        headerEntry.showChildren = !headerEntry.showChildren;
+        _headerChanged(headerEntry.header);
+      },
+      icon: Icon(
+          headerEntry.showChildren ? Icons.expand_less : Icons.expand_more
+      ),
+    );
+  }
+
+  void _headerChanged(Header header) {
+    Provider.of<HeadersBloc>(context, listen: false)
+        .add(HeadersBlocHeaderChangedEvent(header));
   }
 
   void _saveCurrentHeaders(BuildContext context) {
@@ -140,13 +226,28 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
   /// Create a linked list of headers that have been sorted, filtered, whatever
   /// and represent what should be shown on the screen and thus iterated through
   /// on the article page.
-  /// TODO Threading?
   LinkedList<HeaderListEntry> _makeVisibleHeaders() {
     final result = LinkedList<HeaderListEntry>();
 
     //TODO Filtering and sorting
-    currentHeaders.headers.values.forEach((e) => result.add(HeaderListEntry(e)));
+    currentHeaders.thread(); //!!!! TODO this on loading somewhere else
+    final rootHeaders = currentHeaders.headers.values.where( (h) => !h.isChild);
+
+    _addHeaderEntries(result, rootHeaders);
     return result;
+  }
+
+  /// Linearize all the headers so we can next/previous navigate through them.
+  /// The builder will have to handle the hierarchical display based on the
+  /// actual header contents.
+  void _addHeaderEntries(LinkedList<HeaderListEntry> l, Iterable<Header> i) {
+    for (final h in i) {
+      //TODO Filtering/sorting
+      l.add(HeaderListEntry(h, h.isChild)); // children start shown
+      if (h.children.isNotEmpty) {
+        _addHeaderEntries(l, h.children);
+      }
+    }
   }
 }
 
