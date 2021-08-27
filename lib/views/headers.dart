@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loggy/loggy.dart';
 import 'package:panoply/blocs/headers_bloc.dart';
 import 'package:panoply/models/header.dart';
+import 'package:panoply/views/fetch_criteria.dart';
 import 'package:panoply/views/server_status.dart';
 import 'package:provider/provider.dart';
 
@@ -40,53 +41,88 @@ class _HeaderListState extends State<HeaderList> with UiLoggy {
         title: Text(widget.group),
       ),
       body: Container(child:
-          BlocBuilder<HeadersBloc, HeadersBlocState>(builder: (context, state) {
-            if (state is HeadersBlocLoadedState) {
-              if (state.headersForGroup.groupName != groupName) { // Stale state
-                return _displayLoading(groupName);
-              }
-              else {
-                currentHeaders = state.headersForGroup;
-                visibleHeaders = _makeVisibleHeaders();
-                return _buildHeaderList();
-              }
-            }
-            else if (state is HeadersBlocFetchingState) {
-              return _displayFetching(groupName);
-            } else if (state is HeadersBlocErrorFetchingState) {
-              return _displayError('fetching headers', state);
-            } else if (state is HeadersBlocFetchDoneState) {
-              currentHeaders = state.headers;
-              _saveCurrentHeaders(context);
-              visibleHeaders = _makeVisibleHeaders();
-              return _buildHeaderList();
-            } else if (state is HeadersBlocLoadingState) {
-              return _displayLoading(state.groupName);
-            } else if (state is HeadersBlocHeaderChangedState) {
-              return _buildHeaderList();
-            } else if (state is HeadersBlocSavedState) {
-              return _buildHeaderList();
-            } else if (state is HeadersBlocInitialState) {
-              return _displayLoading(groupName);
-            } else {
-              return Center(child: Text("Unknown state=$state"));
-            }
-          })),
+      BlocBuilder<HeadersBloc, HeadersBlocState>(builder: (context, state) {
+        loggy.debug("build state=$state");
+        if (state is HeadersBlocLoadedState) {
+          if (state.headersForGroup.groupName != groupName) { // Stale state
+            return _displayLoading(groupName);
+          }
+          else {
+            currentHeaders = state.headersForGroup;
+            visibleHeaders = _makeVisibleHeaders();
+            return _buildHeaderList();
+          }
+        }
+        else if (state is HeadersBlocFetchingState) {
+          return _displayFetching(groupName);
+        } else if (state is HeadersBlocErrorFetchingState) {
+          return _displayError('fetching headers', state);
+        } else if (state is HeadersBlocFetchDoneState) {
+          currentHeaders = state.headers;
+          _saveCurrentHeaders(context);
+          visibleHeaders = _makeVisibleHeaders();
+          return _buildHeaderList();
+        } else if (state is HeadersBlocLoadingState) {
+          return _displayLoading(state.groupName);
+        } else if (state is HeadersBlocHeaderChangedState) {
+          return _buildHeaderList();
+        } else if (state is HeadersBlocSavedState) {
+          return _buildHeaderList();
+        } else if (state is HeadersBlocInitialState) {
+          return _displayLoading(groupName);
+        } else {
+          return Center(child: Text("Unknown state=$state"));
+        }
+      })),
       bottomSheet: Container(
         padding: const EdgeInsets.all(kBodyEdgeInsets),
         child: const ServerStatus(),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Fetch headers',
-        onPressed: () {
-          final criteria =
-              FetchCriteria(FetchOp.lastNHeaders, 100); //TODO From user input
-          BlocProvider.of<HeadersBloc>(context, listen: false)
-              .add(HeadersForGroupFetchEvent(currentHeaders.groupName, criteria));
-        },
+        onPressed: () => _fetchHeaders(context),
         child: const Icon(Icons.download),
       ),
     );
+  }
+
+  void _fetchHeaders(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: Text("Fetch $groupName"),
+          children: [
+            FetchCriteriaView(key:fetchCriteriaViewStateKey),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                    child: Text("Cancel"),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    }
+                ),
+                TextButton(
+                  child: Text("Fetch"),
+                  onPressed: () => _doFetchHeadersFromViewCriteria(context),
+                ),
+              ],
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  /// Get a criteria object from the view and have the headers fetched
+  void _doFetchHeadersFromViewCriteria(BuildContext context) {
+    final criteriaState = fetchCriteriaViewStateKey.currentState as CriteriaState?;
+    final criteria = criteriaState?.getCriteria()
+        ?? FetchCriteria(FetchOp.lastNHeaders, numberOfHeaders: 10);
+    BlocProvider.of<HeadersBloc>(context, listen: false)
+        .add(HeadersForGroupFetchEvent(currentHeaders.groupName, criteria));
+    Navigator.pop(context);
   }
 
   Widget _displayError(String action, errorState) {

@@ -13,10 +13,12 @@ enum FetchOp { lastNDays, newHeaders, allHeaders, lastNHeaders}
 class FetchCriteria {
   /// Type of fetch
   final FetchOp op;
-  /// Value for value needing op. Meaning varies by op.
-  final int? n;
+  /// Number of days for days op
+  final int? numberOfDays;
+  /// Number of headers for headers op
+  final int? numberOfHeaders;
 
-  FetchCriteria(this.op, this.n);
+  FetchCriteria(this.op, {int? this.numberOfDays, int? this.numberOfHeaders});
 
   /// Create an iterable appropriate for this criteria
   Iterable<T> iterableFor<T>(List<T> list) {
@@ -26,7 +28,7 @@ class FetchCriteria {
         return list; // Just process everything
 
       case FetchOp.lastNHeaders:
-        return list.skip(list.length - (n ?? 0));
+        return list.skip(list.length - (numberOfHeaders ?? 0));
 
       case FetchOp.lastNDays:
         return list.reversed; // Will have to fetch header to check date
@@ -36,8 +38,8 @@ class FetchCriteria {
   /// Return a string for a server request range from our criteria.
   String get articleRange {
     if (op == FetchOp.newHeaders) {
-      if (n != null) {
-        return "$n-";
+      if (numberOfHeaders != null) {
+        return "$numberOfHeaders-";
       }
       else {
         throw Exception("FetchCriteria: null 'n' for newHeaders criteria");
@@ -51,10 +53,10 @@ class FetchCriteria {
   String toString() {
     final String c;
     switch (op) {
-      case FetchOp.lastNDays: c = "last $n days"; break;
+      case FetchOp.lastNDays: c = "last $numberOfDays days"; break;
       case FetchOp.newHeaders: c = 'new'; break;
       case FetchOp.allHeaders: c = 'all'; break;
-      case FetchOp.lastNHeaders: c = 'latest $n headers'; break;
+      case FetchOp.lastNHeaders: c = 'latest $numberOfHeaders headers'; break;
     }
 
     return c;
