@@ -263,7 +263,7 @@ class NntpServer {
         });
 
         (await _stream).listen((event) {/*log.debug("Data: [$event]");*/},
-            onError: (error) => _handleError('listen on stream error', error),
+            onError: (error) => _handleError('listen on stream error', "$error"),
             onDone: () {
               log.debug(
                   "name=$name hostName=$hostName portNumber=$portNumber is done!");
@@ -450,7 +450,6 @@ class NntpServer {
         body.add(line);
       }
     });
-
     return makeResponse(header, body, mappedHeader);
   }
 

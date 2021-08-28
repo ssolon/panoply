@@ -90,7 +90,7 @@ void main() {
 
   group("Criteria", () {
     test("allHeaders", () {
-      final c = FetchCriteria(FetchOp.allHeaders, null);
+      final c = FetchCriteria(FetchOp.allHeaders);
       final l = [1,2,3,4,5];
 
       expect(c.articleRange, '', reason: 'articleRange');
@@ -98,7 +98,7 @@ void main() {
     });
 
     test("newHeaders", () {
-      final c = FetchCriteria(FetchOp.newHeaders, 3);
+      final c = FetchCriteria(FetchOp.newHeaders, numberOfHeaders: 3);
       final l = [1,2,3,4,5];
 
       expect(c.articleRange, '3-', reason:'articleRange');
@@ -106,7 +106,7 @@ void main() {
     });
 
     test("lastNHeaders", () {
-      final c = FetchCriteria(FetchOp.lastNHeaders, 3);
+      final c = FetchCriteria(FetchOp.lastNHeaders, numberOfHeaders: 3);
       final l = [1,2,3,4,5];
 
       expect(c.articleRange, '', reason:'articleRange');
@@ -114,7 +114,7 @@ void main() {
     });
 
     test("lastNDays", () {
-      final c = FetchCriteria(FetchOp.lastNDays, 3);
+      final c = FetchCriteria(FetchOp.lastNDays, numberOfDays: 3);
       final l = [1,2,3,4,5];
 
       expect(c.articleRange, '', reason:'articleRange');

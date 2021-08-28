@@ -227,7 +227,7 @@ class ArticleHeader extends Header {
 
 /// An article which has both the headers and the body.
 class Article {
-  final ArticleHeader headers;
+  final Header headers;
   final List<String> body;
 
   Article(this.headers, this.body);

@@ -182,14 +182,22 @@ class NewsService extends Bloc<NewsServiceEvent, NewsServiceState> {
   /// Fetch and return a complete article (header and body) for [header.msgId].
   Future<Article> fetchArticle(Header header) async {
      final request = "ARTICLE ${header.msgId}";
-     final response = await primaryServer?.executeMultilineWithHeadersRequest(request);
-     _checkResponse("fetch article msgId=${header.msgId} subject=$header.subject",
-         primaryServer!, response!);
+     try {
+       final response = await primaryServer?.executeMultilineWithHeadersRequest(
+           request);
+       _checkResponse(
+           "fetch article msgId=${header.msgId} subject=$header.subject",
+           primaryServer!, response!);
 
-     return Article(
-         ArticleHeader(header.number, response.headers),
-         response.body
-    );
+       return Article(
+           ArticleHeader(header.number, response.headers),
+           response.body
+       );
+     } catch (e) {
+       final errorBody = "Failed to fetch article: $e";
+       log.error("------ Exception caught fetching article ${header.subject}");
+       return Article(header, [errorBody]);
+     }
   }
 
   /// Fetch the body for [header.msgId].
