@@ -19,7 +19,7 @@ class ArticleBody {
   /// Default: true
   bool fillParagraphs = true;
 
-  /// When true a line with leaving white space (space or tab) will cause a line
+  /// When true a line with leading white space (space or tab) will cause a line
   /// break.
   /// Default: false
   bool leadingSpaceAsIs = false;
@@ -91,9 +91,6 @@ class ArticleBody {
     if (needNewLine || breakLine) {
       nodes.add(ArticleBodyTextLine(line));
 
-      // if (asIsLine) {
-      //   nodes.add(BodyTextLine('')); // should be it's own line
-      // }
     } else { // fill current line
       (nodes.last as ArticleBodyTextLine).add(line);
     }

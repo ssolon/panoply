@@ -1,5 +1,6 @@
 
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -18,6 +19,8 @@ class ArticlePage extends StatefulWidget {
   @override
   State<ArticlePage> createState() => _ArticlePageState(startingEntry);
 }
+
+enum PopupMenuAction { showHeaders}
 
 class _ArticlePageState extends State<ArticlePage> {
   HeaderListEntry? currentHeaderEntry;
@@ -48,6 +51,7 @@ class _ArticlePageState extends State<ArticlePage> {
                 _nextAction(),
                 _formatAction(),
                 _readAction(),
+                _moreActions(context),
               ],
             ),
             body: BlocBuilder<ArticleBloc, ArticleBlocState>(
@@ -155,6 +159,60 @@ class _ArticlePageState extends State<ArticlePage> {
             ? const Icon(Icons.mark_email_unread_outlined)
             : const Icon(Icons.mark_email_read_outlined)
     );
+  }
+
+  Widget _moreActions(BuildContext context) {
+    return PopupMenuButton(
+      onSelected: (selected) =>
+          _popupMenuAction(context, selected as PopupMenuAction),
+       itemBuilder: (BuildContext context) {
+         return [
+           PopupMenuItem(
+               child: Text('Show headers...'),
+               value: PopupMenuAction.showHeaders,
+               // onTap: () => _showHeadersAction(context)
+           ),
+         ];
+       }
+    );
+  }
+
+  void _popupMenuAction(BuildContext context, PopupMenuAction action) {
+    switch (action) {
+      case PopupMenuAction.showHeaders:
+        _showHeadersAction(context);
+        break;
+    }
+  }
+
+  void _showHeadersAction(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+            // title: Text('Header'),
+            content: Stack(
+                children:
+                [
+                  SingleChildScrollView(
+                    child: Column(
+                      children: (currentHeaderEntry?.header.raw ?? ["empty"])
+                          .map((l) => Text(l)).toList(),
+                    ),
+                  ),
+                  Positioned(
+                    top: -4, right: -4,
+                    child: IconButton(
+                      alignment: Alignment.topRight,
+                      padding: EdgeInsets.all(0.0),
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close),
+                    ),
+                  ),
+                ]
+            ),
+        );
+      });
   }
 
   void _markArticleRead(bool isRead) {

@@ -108,6 +108,9 @@ abstract class Header {
   /// Threaded children
   LinkedHashSet<Header> get children;
 
+  /// Return all the headers as just a list of strings
+  List<String> get raw;
+
   Map<String, dynamic> toJson();
 
   Header();
@@ -208,6 +211,10 @@ class ArticleHeader extends Header {
         h['isRead'] as bool
     );
 
+  }
+
+  List<String> get raw {
+    return full;
   }
 
   Map<String, dynamic> toJson() => {
