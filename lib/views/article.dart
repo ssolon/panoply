@@ -195,6 +195,7 @@ class _ArticlePageState extends State<ArticlePage> {
                 [
                   SingleChildScrollView(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: (currentHeaderEntry?.header.raw ?? ["empty"])
                           .map((l) => Text(l)).toList(),
                     ),
