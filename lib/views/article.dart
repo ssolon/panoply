@@ -1,7 +1,4 @@
 
-import 'dart:collection';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +6,7 @@ import 'package:panoply/blocs/article_bloc.dart';
 import 'package:panoply/blocs/headers_bloc.dart';
 import 'package:panoply/models/header.dart';
 import 'package:panoply/util/article_body.dart';
+import 'package:panoply/util/quoted_printable.dart';
 import 'package:provider/provider.dart';
 
 class ArticlePage extends StatefulWidget {
@@ -67,7 +65,8 @@ class _ArticlePageState extends State<ArticlePage> {
                         children: [
                           _buildHeader(state.header, context),
                           Divider(),
-                          _buildBody(state.body),
+                          _buildBody(state.body,
+                              state.header.getString('content-transfer-encoding')),
                         ]
                     );
                   } else if (state is ArticleBlockInitialState) {
@@ -110,7 +109,7 @@ class _ArticlePageState extends State<ArticlePage> {
 
   Widget _prevAction() {
     return IconButton(
-      icon: Icon(Icons.navigate_before),
+      icon: const Icon(Icons.navigate_before),
       onPressed: (currentHeaderEntry?.previous != null)
           ? () =>
           setState (() =>
@@ -121,7 +120,7 @@ class _ArticlePageState extends State<ArticlePage> {
 
   Widget _nextAction() {
     return IconButton(
-      icon: Icon(Icons.navigate_next),
+      icon: const Icon(Icons.navigate_next),
       onPressed: (currentHeaderEntry?.next != null)
           ? () =>
           setState (() =>
@@ -167,7 +166,7 @@ class _ArticlePageState extends State<ArticlePage> {
           _popupMenuAction(context, selected as PopupMenuAction),
        itemBuilder: (BuildContext context) {
          return [
-           PopupMenuItem(
+           const PopupMenuItem(
                child: Text('Show headers...'),
                value: PopupMenuAction.showHeaders,
                // onTap: () => _showHeadersAction(context)
@@ -238,10 +237,13 @@ class _ArticlePageState extends State<ArticlePage> {
     );
   }
 
-  Widget _buildBody(List<String> bodyLines) {
+  Widget _buildBody(List<String> bodyLines, String transferEncoding) {
+    final lines = transferEncoding == 'quoted-printable'
+        ? QuotedPrintable(bodyLines) : bodyLines;
+
     if (smartFormatting) {
       final body = ArticleBody('', currentHeaderEntry?.header.getString('Content-Transfer-Encoding'));
-      body.build(bodyLines.iterator);
+      body.build(lines.iterator);
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +252,7 @@ class _ArticlePageState extends State<ArticlePage> {
     } else {
       return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: bodyLines.map( (l) => Text(l)).toList(),
+          children: lines.map( (l) => Text(l)).toList(),
       );
     }
   }
