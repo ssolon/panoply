@@ -214,7 +214,7 @@ class ArticleHeader extends Header {
   }
 
   List<String> get raw {
-    return full;
+    return ["article-number: $number"].followedBy(full).toList();
   }
 
   Map<String, dynamic> toJson() => {
