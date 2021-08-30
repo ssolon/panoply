@@ -25,7 +25,7 @@ class ArticleBody {
   bool leadingSpaceAsIs = false;
 
   List<BodyNode> nodes = [];
-  RegExp get prefixRe => RegExp(r'^(>*)(.*)$');
+  RegExp get prefixRe => RegExp(r'^(>*[\s]*>*)(.*)$');
 
   /// Create a body of text prefixed by [prefix]. Top level should usually
   /// have a prefix of ''.
