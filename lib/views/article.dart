@@ -12,20 +12,20 @@ import 'package:provider/provider.dart';
 class ArticlePage extends StatefulWidget {
   final HeaderListEntry startingEntry;
 
-  ArticlePage(this.startingEntry) : super();
+  const ArticlePage(this.startingEntry) : super();
 
   @override
   State<ArticlePage> createState() => _ArticlePageState(startingEntry);
 }
 
-enum PopupMenuAction { showHeaders}
+enum PopupMenuAction { showHeaders }
 
 class _ArticlePageState extends State<ArticlePage> {
   HeaderListEntry? currentHeaderEntry;
   HeaderListEntry? nextHeaderEntry;
   bool smartFormatting = true;
   bool get isCurrentRead => currentHeaderEntry?.header.isRead ?? false;
-  void set isCurrentRead(bool newIsRead) {
+  set isCurrentRead(bool newIsRead) {
     if (currentHeaderEntry != null) {
       currentHeaderEntry!.header.isRead = newIsRead;
     }
@@ -59,12 +59,16 @@ class _ArticlePageState extends State<ArticlePage> {
                       // Stale state
                       return _displayLoading();
                     }
+
+                    // Transfer any "state" from listEntryHeader
+                    state.header.isRead =
+                        currentHeaderEntry?.header.isRead ?? false;
                     return ListView(
                         padding: const EdgeInsets.all(10.0),
                         //TODO Konstant or setting
                         children: [
                           _buildHeader(state.header, context),
-                          Divider(),
+                          const Divider(),
                           _buildBody(state.body,
                               state.header.getString('content-transfer-encoding')),
                         ]
@@ -204,9 +208,9 @@ class _ArticlePageState extends State<ArticlePage> {
                     top: -4, right: -4,
                     child: IconButton(
                       alignment: Alignment.topRight,
-                      padding: EdgeInsets.all(0.0),
+                      padding: const EdgeInsets.all(0.0),
                       onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.close),
+                      icon: const Icon(Icons.close),
                     ),
                   ),
                 ]
@@ -264,7 +268,7 @@ class _ArticlePageState extends State<ArticlePage> {
         if (p.line.isEmpty) continue; // Swallow blank lines
 
         yield Container(
-            margin: EdgeInsets.only(left: 4.0), //TODO Konstant or setting
+            margin: const EdgeInsets.only(left: 4.0), //TODO Konstant or setting
             child: Column (
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -275,7 +279,7 @@ class _ArticlePageState extends State<ArticlePage> {
       }
       else if (p is ArticleBodyNested) { // Nested body
         yield Container(
-            margin: EdgeInsets.only(left: 3.0), //TODO Konstant or setting
+            margin: const EdgeInsets.only(left: 3.0), //TODO Konstant or setting
             decoration: const BoxDecoration(
                 border: Border(
                     left: BorderSide(width: 2.0, color: Color(0x88888888))
